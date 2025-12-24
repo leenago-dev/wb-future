@@ -1,0 +1,285 @@
+---
+alwaysApply: true
+---
+
+# Null vs Undefined Convention
+
+## Core Principle
+
+**ALWAYS use `undefined` for optional values. NEVER use `null` for optional parameters or props.**
+
+This rule ensures type consistency across the codebase, especially with TypeScript's optional parameter syntax and React Query patterns.
+
+## Why `undefined` Over `null`?
+
+1. **TypeScript Optional Syntax**: `param?: string` is equivalent to `param: string | undefined`, not `param: string | null`
+2. **Consistency**: Optional parameters naturally use `undefined` when omitted
+3. **API Boundaries**: Convert `null` to `undefined` at API boundaries (e.g., `searchParams.get()`)
+4. **React Patterns**: JSX props default to `undefined` when not provided
+
+## Decision Tree
+
+```
+Is this value optional?
+  ├─ YES → Use `string | undefined`
+  └─ NO → Use `string` (required)
+
+Is this a function parameter?
+  ├─ Optional → Use `param?: string` or `param: string | undefined`
+  └─ Required → Use `param: string`
+
+Is this from an external API that returns null?
+  ├─ Convert at boundary → `apiResult ?? undefined`
+  └─ Keep undefined internally
+
+Is this React props?
+  ├─ Optional prop → `propName?: string`
+  └─ Required prop → `propName: string`
+```
+
+## ✅ Correct Patterns
+
+### Function Signatures
+
+```typescript
+// ✅ CORRECT: Optional parameter with undefined
+function fetchData(orderId: string | undefined) {
+  if (!orderId) return
+  // ...
+}
+
+// ✅ CORRECT: Optional syntax (equivalent to above)
+function fetchData(orderId?: string) {
+  if (!orderId) return
+  // ...
+}
+
+// ✅ CORRECT: React Query hook
+export function useDataQuery(id: string | undefined) {
+  return useQuery({
+    queryKey: ["data", id],
+    queryFn: () => {
+      if (!id) throw new Error("ID required")
+      return fetchData(id)
+    },
+    enabled: !!id,
+  })
+}
+```
+
+### React Components
+
+```typescript
+// ✅ CORRECT: Optional prop
+interface PageProps {
+  orderId: string | undefined
+}
+
+function Page({ orderId }: PageProps) {
+  // ...
+}
+
+// ✅ CORRECT: Using optional syntax
+interface PageProps {
+  orderId?: string
+}
+```
+
+### API Boundary Conversion
+
+```typescript
+// ✅ CORRECT: Convert null to undefined at boundary
+export default function HomePage() {
+  const searchParams = useSearchParams()
+  const orderId = searchParams.get("orderId") ?? undefined
+
+  return <CancellationFeePage orderId={orderId} />
+}
+```
+
+### Type Guards and Checks
+
+```typescript
+// ✅ CORRECT: Check for undefined
+if (!orderId) {
+  // handles both undefined and empty string
+}
+
+// ✅ CORRECT: Explicit undefined check
+if (orderId === undefined) {
+  // ...
+}
+
+// ✅ CORRECT: Nullish coalescing with undefined
+const id = orderId ?? "default-id"
+```
+
+## ❌ Anti-Patterns
+
+### Using null for Optional Values
+
+```typescript
+// ❌ WRONG: Using null for optional parameter
+function fetchData(orderId: string | null) {
+  // ...
+}
+
+// ❌ WRONG: Using null in props
+interface PageProps {
+  orderId: string | null
+}
+
+// ❌ WRONG: Explicitly passing null
+;<Page orderId={null} />
+
+// ❌ WRONG: Converting undefined to null
+const orderId = searchParams.get("orderId") ?? null // Don't do this!
+```
+
+### Mixing null and undefined
+
+```typescript
+// ❌ WRONG: Inconsistent types
+interface ComponentProps {
+  userId: string | undefined
+  orderId: string | null // Inconsistent!
+}
+
+// ❌ WRONG: Union with both
+function getData(id: string | null | undefined) {
+  // Avoid this - too many possible states
+}
+```
+
+## Special Cases
+
+### External Libraries Returning null
+
+When dealing with external APIs or libraries that return `null`, convert at the boundary:
+
+```typescript
+// External API returns null
+const apiResult = externalApi.getData() // returns string | null
+
+// Convert immediately at boundary
+const data = apiResult ?? undefined
+
+// Now use consistently with undefined
+function processData(data: string | undefined) {
+  // ...
+}
+processData(data)
+```
+
+### Database Queries
+
+For database nullable fields, convert to undefined when exposing to application logic:
+
+```typescript
+// Database layer (may have null)
+interface DBUser {
+  email: string | null
+}
+
+// Application layer (convert to undefined)
+interface User {
+  email: string | undefined
+}
+
+function mapDbUserToUser(dbUser: DBUser): User {
+  return {
+    email: dbUser.email ?? undefined,
+  }
+}
+```
+
+## Implementation Checklist
+
+When writing or reviewing code, verify:
+
+- [ ] All optional function parameters use `string | undefined` or optional syntax `param?: string`
+- [ ] All optional React props use `PropName?: Type` or `PropName: Type | undefined`
+- [ ] All optional return types use `Type | undefined`, not `Type | null`
+- [ ] External API responses that return `null` are converted to `undefined` at the boundary
+- [ ] No mixed usage of `null` and `undefined` for the same semantic meaning
+- [ ] Query hooks accept `string | undefined` for optional IDs
+- [ ] Component props receive `string | undefined` for optional values
+
+## Migration Path
+
+When encountering existing `string | null` code:
+
+1. **Identify the boundary**: Where does the null come from?
+2. **Convert at entry**: Add `?? undefined` at the API boundary
+3. **Update signatures**: Change `string | null` to `string | undefined`
+4. **Update call sites**: Remove `?? null` conversions, use `?? undefined` if needed
+5. **Verify**: Ensure TypeScript compilation succeeds
+
+## Examples from Recent Migration
+
+### Before (Inconsistent)
+
+```typescript
+// Mixing null and undefined
+function useCancellationFee(orderId: string | null) {}
+function useAirInfo(orderId: string | undefined) {}
+
+// At call site
+const orderId = searchParams.get("orderId") // string | null
+useCancellationFee(orderId) // OK but inconsistent
+useAirInfo(orderId ?? undefined) // Had to convert
+```
+
+### After (Consistent)
+
+```typescript
+// Consistent undefined usage
+function useCancellationFee(orderId: string | undefined) {}
+function useAirInfo(orderId: string | undefined) {}
+
+// At call site
+const orderId = searchParams.get("orderId") ?? undefined
+useCancellationFee(orderId) // Clean
+useAirInfo(orderId) // Clean
+```
+
+## Rationale: Type Safety and Ergonomics
+
+Using `undefined` consistently provides:
+
+1. **Type Safety**: Aligns with TypeScript's optional semantics
+2. **Less Boilerplate**: No need for constant `?? undefined` conversions
+3. **Better DX**: IntelliSense and autocomplete work better
+4. **Clearer Intent**: `undefined` = "not provided", `null` = "explicitly empty" (when needed for semantic distinction)
+5. **Framework Alignment**: React, TanStack Query, and Next.js patterns prefer `undefined`
+
+## When null IS Appropriate
+
+Use `null` only when there's a semantic distinction from "not provided":
+
+```typescript
+// ✅ CORRECT: null means "explicitly cleared/deleted"
+interface User {
+  avatar: string | null // null = no avatar set, different from undefined
+}
+
+// ✅ CORRECT: null in API response schema (then convert)
+interface ApiResponse {
+  deletedAt: string | null // API uses null for "not deleted"
+}
+```
+
+But even in these cases, consider if `undefined` would be clearer.
+
+## Enforcement
+
+This rule should be enforced through:
+
+1. **Code Review**: Check for `string | null` in optional parameters/props
+2. **TypeScript**: Strict null checks enabled
+3. **Linting**: Consider custom ESLint rule for consistency
+4. **PR Template**: Include null/undefined convention in checklist
+
+---
+
+**Remember**: Optional means `undefined`. Explicit absence means `null`. In most cases, you want optional.

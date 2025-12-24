@@ -1,0 +1,107 @@
+---
+alwaysApply: true
+---
+function Calendar() {
+  return <DayPicker formatters={{ formatCaption: (date) => `${date.getFullYear()}년` }} />
+}
+
+// ❌ 금지: 렌더링마다 filterLogic 함수가 새로 생성됨
+function UserList() {
+  const filterLogic = (users) => users.filter(u => u.active);
+  return <List filter={filterLogic} />
+}
+
+❌ 렌더링 중 부수 효과(Side Effects) 발생 금지
+
+이유: 렌더링은 순수 계산이어야 함. 렌더링 도중 state를 바꾸거나 API를 호출하면 무한 루프에 빠짐.
+
+// ❌ 금지: 렌더링 도중 state 변경
+function BadComponent() {
+  const [count, setCount] = useState(0);
+  setCount(count + 1); // 🚨 무한 루프 발생!
+  return <div>{count}</div>
+}
+
+✅ 필수 최적화 전략 (Best Practices)
+
+1. 정적 데이터 외부 분리 (Extraction)
+
+컴포넌트의 props나 state에 의존하지 않는 값은 반드시 컴포넌트 밖으로 뺀다.
+
+// ✅ 올바름: 컴포넌트 외부 상수로 선언 (참조 고정)
+const CALENDAR_FORMATTERS = {
+  formatCaption: (date: Date) => `${date.getFullYear()}년 ${date.getMonth() + 1}월`,
+};
+
+function Calendar() {
+  return <DayPicker formatters={CALENDAR_FORMATTERS} />
+}
+
+2. useMemo & useCallback 활용 (Memoization)
+
+컴포넌트 내부에서 선언해야 한다면, 메모이제이션을 통해 참조를 유지한다.
+
+// ✅ 올바름: 의존성(locale)이 바뀔 때만 객체 재생성
+function Calendar({ locale }) {
+  const formatters = useMemo(() => ({
+    formatCaption: (date) => formatDate(date, locale)
+  }), [locale]); // 의존성 배열 필수
+
+  const handleSelect = useCallback((date) => {
+    console.log(date);
+  }, []); // 함수 재사용
+
+  return <DayPicker formatters={formatters} onSelect={handleSelect} />
+}
+
+3. Key Props의 올바른 사용
+
+리스트 렌더링 시 index 대신 고유한 id를 사용한다. (State 보존 규칙)
+
+// ❌ 금지: 순서가 바뀌면 버그 발생 가능
+{items.map((item, index) => <ListItem key={index} />)}
+
+// ✅ 올바름: 데이터의 고유 ID 사용
+{items.map((item) => <ListItem key={item.id} />)}
+
+🧠 Hooks 활용 가이드
+
+📍 언제 무엇을 써야 할까?
+
+| Hook | 사용 목적 | 비유 (Leena님 맞춤) |
+|------|----------|-------------------|
+| useMemo | 값(결과) 재사용 | "어려운 수학 문제 정답을 적어둔 컨닝 페이퍼" |
+| useCallback | 함수(행동) 재사용 | "매번 새로 쓰지 않고 코팅해서 벽에 붙여둔 업무 매뉴얼" |
+| useRef | 리렌더링 없는 값 저장 | "화면은 안 바뀌지만 조용히 기록해두는 포스트잇" |
+
+🔍 useRef 활용 예시
+
+값이 바뀌어도 화면을 다시 그릴 필요가 없을 때 사용.
+
+function Timer() {
+  const intervalRef = useRef<number | null>(null); // 리렌더링 유발 안 함
+
+  const start = () => {
+    intervalRef.current = window.setInterval(() => {}, 1000);
+  };
+}
+📋 최적화 체크리스트
+
+코드를 커밋하기 전 다음 항목을 확인한다.
+
+[ ] props로 전달되는 객체나 함수가 컴포넌트 내부에서 매번 새로 생성되고 있지 않은가?
+[ ] useMemo와 useCallback의 의존성 배열([])은 정확한가?
+[ ] 렌더링 로직(return 위쪽 코드)에 setState나 fetch 같은 부수 효과가 없는가?
+[ ] 리스트 렌더링(map)에 key 값으로 고유 ID를 사용했는가?
+[ ] 자식 컴포넌트가 불필요하게 리렌더링된다면 React.memo 적용을 고려했는가?
+
+🚨 긴급 상황 프로토콜 (디버깅)
+
+"왜 리렌더링 되는지 모르겠을 때"
+
+1. React DevTools의 "Highlight updates when components render" 기능을 켠다.
+2. console.log를 컴포넌트 본문에 넣어 로그가 몇 번 찍히는지 확인한다.
+3. 부모 컴포넌트에서 전달되는 props 중 객체나 함수가 새로 만들어지고 있는지 확인한다.
+
+2. console.log를 컴포넌트 본문에 넣어 로그가 몇 번 찍히는지 확인한다.
+3. 부모 컴포넌트에서 전달되는 props 중 객체나 함수가 새로 만들어지고 있는지 확인한다.

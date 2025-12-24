@@ -1,0 +1,362 @@
+---
+globs: "*.ts,*.tsx,*.js,*.jsx"
+description: "Absolute Import Enforcement - Use @ alias instead of relative paths"
+---
+
+# 🎯 CRITICAL: Always Use Absolute Imports with @ Alias
+
+## ABSOLUTE REQUIREMENT
+
+**NEVER use relative imports (../, ./, ../../). ALWAYS use absolute imports with @ alias.**
+
+## PROBLEM STATEMENT
+
+**ROOT CAUSE**: Relative imports cause:
+
+- **Maintenance Nightmare**: File moves require updating all relative paths
+- **Poor Readability**: `../../../../utils/helper` is confusing
+- **Refactoring Difficulty**: Hard to track dependencies across the codebase
+- **Import Inconsistency**: Same module imported with different paths
+- **Cognitive Load**: Developers must mentally calculate relative paths
+
+## ❌ FORBIDDEN PATTERNS
+
+```typescript
+// ❌ NEVER: Parent directory relative imports
+import { helper } from "../utils/helper"
+import { Component } from "../../components/Button"
+import { type User } from "../../../types/user"
+
+// ❌ NEVER: Current directory relative imports
+import { config } from "./config"
+import { helper } from "./utils"
+
+// ❌ NEVER: Deep nested relative imports
+import { utils } from "../../../../shared/utils"
+import { constants } from "../../../constants/app"
+
+// ❌ NEVER: Mixed relative and absolute
+import { a } from "@/utils/a" // Absolute
+import { b } from "../utils/b" // Relative ❌ INCONSISTENT
+```
+
+## ✅ REQUIRED PATTERNS
+
+```typescript
+// ✅ ALWAYS: Use @ alias for ALL imports within the project
+import { helper } from "@/utils/helper"
+import { Button } from "@/components/Button"
+import type { User } from "@/types/user"
+
+// ✅ ALWAYS: Use @ for deeply nested paths
+import { utils } from "@/shared/utils"
+import { constants } from "@/constants/app"
+
+// ✅ ALWAYS: Use @ even for same directory
+import { config } from "@/services/fee-calculator/config"
+import { helper } from "@/services/fee-calculator/utils/helper"
+
+// ✅ CORRECT: External packages use standard imports
+import React from "react"
+import { parseISO } from "date-fns"
+import { z } from "zod"
+```
+
+## DECISION FRAMEWORK
+
+### When Importing a Module:
+
+```
+Q: Is this an external package (node_modules)?
+├─ YES → Use standard import: import X from "package-name"
+│   ✅ import React from "react"
+│   ✅ import { useState } from "react"
+│
+└─ NO → It's internal code
+    ├─ Use @ alias ALWAYS
+    │   ✅ import { helper } from "@/utils/helper"
+    │   ✅ import { Button } from "@/components/Button"
+    │   ✅ import type { User } from "@/types/user"
+    │
+    └─ NEVER use relative paths
+        ❌ import { helper } from "../utils/helper"
+        ❌ import { Button } from "./components/Button"
+```
+
+## PATH ALIAS MAPPING
+
+Based on `tsconfig.json`:
+
+```json
+{
+  "compilerOptions": {
+    "paths": {
+      "@/*": ["./src/*"]
+    }
+  }
+}
+```
+
+### Standard Project Structure:
+
+```
+src/
+├── actions/          → @/actions/
+├── app/              → @/app/
+├── components/       → @/components/
+├── hooks/            → @/hooks/
+├── lib/              → @/lib/
+├── services/         → @/services/
+├── stores/           → @/stores/
+├── types/            → @/types/
+└── utils/            → @/utils/
+```
+
+## CONVERSION EXAMPLES
+
+### Example 1: Component Imports
+
+```typescript
+// ❌ WRONG: Relative path
+// File: src/components/ui/Button.tsx
+import { cn } from "../../lib/utils"
+import { buttonVariants } from "./button-variants"
+
+// ✅ CORRECT: Absolute path
+import { cn } from "@/lib/utils"
+import { buttonVariants } from "@/components/ui/button-variants"
+```
+
+### Example 2: Hook Imports
+
+```typescript
+// ❌ WRONG: Relative path
+// File: src/hooks/use-fee-calculator.ts
+import { FeeCalculatorBuilder } from "../services/fee-calculator"
+import type { FeeCalculationResult } from "../lib/schemas/cancellation-fee"
+
+// ✅ CORRECT: Absolute path
+import { FeeCalculatorBuilder } from "@/services/fee-calculator"
+import type { FeeCalculationResult } from "@/lib/schemas/cancellation-fee"
+```
+
+### Example 3: Nested Service Imports
+
+```typescript
+// ❌ WRONG: Relative path
+// File: src/services/fee-calculator/strategies/ndc-strategy.ts
+import { BaseFeeStrategy } from "./base-strategy"
+import type { ConsolidatedFee } from "../types"
+import { createSegmentFee } from "../utils"
+
+// ✅ CORRECT: Absolute path
+import { BaseFeeStrategy } from "@/services/fee-calculator/strategies/base-strategy"
+import type { ConsolidatedFee } from "@/services/fee-calculator/types"
+import { createSegmentFee } from "@/services/fee-calculator/utils"
+```
+
+### Example 4: Type Imports
+
+```typescript
+// ❌ WRONG: Relative path
+import type { User } from "../../types/user"
+import type { Config } from "../config"
+
+// ✅ CORRECT: Absolute path
+import type { User } from "@/types/user"
+import type { Config } from "@/services/config"
+```
+
+## MIGRATION STRATEGY
+
+### Step 1: Find all relative imports
+
+```bash
+# Search for relative imports
+grep -r "from \"\.\." src/ --include="*.ts" --include="*.tsx"
+grep -r "from '\.\." src/ --include="*.ts" --include="*.tsx"
+```
+
+### Step 2: Convert to absolute path
+
+```typescript
+// Current file: src/services/fee-calculator/strategies/ndc-strategy.ts
+
+// ❌ Found: "../utils"
+import { helper } from "../utils"
+
+// Calculate absolute path:
+// Current: src/services/fee-calculator/strategies/
+// Target:  src/services/fee-calculator/utils/
+// Result:  @/services/fee-calculator/utils
+
+// ✅ Replace with:
+import { helper } from "@/services/fee-calculator/utils"
+```
+
+### Step 3: Verify imports work
+
+```typescript
+// TypeScript should resolve correctly
+// IDE should provide autocomplete
+// No import errors in build
+```
+
+### Step 4: Update all occurrences
+
+```bash
+# Use find-and-replace in IDE
+# From: "../utils"
+# To:   "@/services/fee-calculator/utils"
+```
+
+## AUTOMATED DETECTION
+
+```bash
+# Find all relative imports (pre-commit check)
+#!/bin/bash
+if grep -r "from ['\"]\.\./" src/ --include="*.ts" --include="*.tsx" --include="*.js" --include="*.jsx"; then
+  echo "❌ ERROR: Relative imports found. Use @ alias instead."
+  exit 1
+else
+  echo "✅ PASS: All imports use @ alias."
+  exit 0
+fi
+```
+
+## ENFORCEMENT RULES
+
+### Pre-Commit Checklist:
+
+- [ ] ✅ No `from "../` in any source file
+- [ ] ✅ No `from "./` for cross-directory imports
+- [ ] ✅ All internal imports use `@/` prefix
+- [ ] ✅ External packages use standard import (no @/)
+- [ ] ✅ ESLint passes without import errors
+
+### Code Review Requirements:
+
+- **MANDATORY**: Reviewer MUST reject any PR with relative imports
+- **MANDATORY**: Verify @ alias is used consistently
+- **MANDATORY**: Check imports resolve correctly
+
+## SPECIFIC SCENARIOS
+
+### Scenario 1: Same Directory Imports
+
+```typescript
+// ❌ WRONG: Even in same directory, avoid relative
+// File: src/services/fee-calculator/strategies/ndc-strategy.ts
+import { BaseFeeStrategy } from "./base-strategy"
+
+// ✅ CORRECT: Use absolute path
+import { BaseFeeStrategy } from "@/services/fee-calculator/strategies/base-strategy"
+
+// 🎯 BEST: Export from index and import from parent
+// File: src/services/fee-calculator/strategies/index.ts
+export * from "./base-strategy"
+export * from "./ndc-strategy"
+
+// Then in other files:
+import {
+  BaseFeeStrategy,
+  NDCStrategy,
+} from "@/services/fee-calculator/strategies"
+```
+
+### Scenario 2: Index File Imports
+
+```typescript
+// ❌ WRONG
+import { utils } from "../utils"
+
+// ✅ CORRECT: Import from index
+import { utils } from "@/services/fee-calculator/utils"
+
+// This resolves to: @/services/fee-calculator/utils/index.ts
+```
+
+### Scenario 3: Type-Only Imports
+
+```typescript
+// ❌ WRONG
+import type { SomeType } from "../../types"
+
+// ✅ CORRECT
+import type { SomeType } from "@/types"
+```
+
+### Scenario 4: Dynamic Imports
+
+```typescript
+// ❌ WRONG
+const module = await import("../components/heavy")
+
+// ✅ CORRECT
+const module = await import("@/components/heavy")
+```
+
+## BENEFITS OF ABSOLUTE IMPORTS
+
+1. **Easy Refactoring**: Move files without updating imports
+2. **Better Readability**: `@/utils/helper` is clearer than `../../../utils/helper`
+3. **Consistency**: Same path everywhere for the same module
+4. **IDE Support**: Better autocomplete and navigation
+5. **Maintenance**: Easier to understand project structure
+6. **Search**: Easy to find all usages with global search
+
+## MENTAL MODEL
+
+**Think**: "@ is the root of src/, always start from there"
+**NOT**: "Where am I relative to this file?"
+
+**Remember**:
+
+- Relative path (`../`) = Hard to maintain = ❌
+- Absolute path (`@/`) = Clear and maintainable = ✅
+
+## EXCEPTION HANDLING
+
+### Q: When can I use relative imports?
+
+**A: NEVER for internal code. Only external packages use standard imports.**
+
+### Q: What about same-directory imports?
+
+**A: Still use @ alias for consistency, or export from index file.**
+
+### Q: What if the path is very long?
+
+**A: That's fine. Long but clear paths are better than short but confusing ones.**
+
+### Q: What about test files?
+
+**A: Same rule applies. Use @ alias in all .ts/.tsx/.js/.jsx files.**
+
+## IMMEDIATE ACTION
+
+When you see or write relative imports:
+
+1. **STOP** - Do not commit
+2. **CALCULATE** - Determine absolute path with @/
+3. **REPLACE** - Change to absolute import
+4. **VERIFY** - Check import resolves correctly
+5. **TEST** - Ensure functionality unchanged
+
+## SUCCESS METRICS
+
+- ✅ Zero relative imports in source code
+- ✅ 100% absolute imports with @ alias
+- ✅ Consistent import style across codebase
+- ✅ Easy file movement without import updates
+- ✅ Clear project structure understanding
+
+**COMMITMENT**: I will NEVER use relative imports and ALWAYS use @ alias for internal code.
+
+---
+
+**FINAL REMINDER**:
+
+- `from "../"` → ❌ WRONG → Convert to `from "@/"`
+- `from "./"` → ❌ WRONG → Convert to `from "@/"`
+- `from "@/"` → ✅ CORRECT → Keep it!

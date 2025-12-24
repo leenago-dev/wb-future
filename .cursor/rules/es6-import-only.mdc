@@ -1,0 +1,265 @@
+---
+globs: "*.ts,*.tsx,*.js,*.jsx"
+description: "ES6 Import Enforcement - Prohibits CommonJS require() usage"
+---
+
+# 🚫 CRITICAL: ES6 Import Only - No require() Allowed
+
+## ABSOLUTE PROHIBITION
+
+**NEVER use CommonJS `require()` syntax in this codebase. ALWAYS use ES6 `import` statements.**
+
+## PROBLEM STATEMENT
+
+**ROOT CAUSE**: Using `require()` in a TypeScript/ES6 codebase causes:
+
+- **Type Safety Loss**: `require()` returns `any` type, bypassing TypeScript's type checking
+- **Inconsistency**: Mixing module systems creates maintenance confusion
+- **Build Issues**: Modern bundlers are optimized for ES6 modules
+- **Tree Shaking**: CommonJS modules cannot be tree-shaken effectively
+- **No Static Analysis**: IDE cannot provide proper autocomplete and type inference
+
+## ❌ FORBIDDEN PATTERNS
+
+```typescript
+// ❌ NEVER: CommonJS require
+const { FeeCalculatorBuilder } = require("@/services/fee-calculator")
+
+// ❌ NEVER: Dynamic require
+const modulePath = "@/utils/helper"
+const helper = require(modulePath)
+
+// ❌ NEVER: Conditional require
+if (condition) {
+  const module = require("./module")
+}
+
+// ❌ NEVER: Destructuring with require
+const { a, b, c } = require("./module")
+
+// ❌ NEVER: Default import with require
+const React = require("react")
+```
+
+## ✅ REQUIRED PATTERNS
+
+```typescript
+// ✅ ALWAYS: Named imports
+import { FeeCalculatorBuilder } from "@/services/fee-calculator"
+
+// ✅ ALWAYS: Default import
+import React from "react"
+
+// ✅ ALWAYS: Namespace import
+import * as utils from "@/utils/helpers"
+
+// ✅ ALWAYS: Type-only imports
+import type { SomeType } from "@/types"
+
+// ✅ ALWAYS: Mixed imports
+import React, { useState, useEffect } from "react"
+
+// ✅ ALWAYS: Side-effect imports
+import "@/styles/global.css"
+
+// ✅ CORRECT: Dynamic import for code splitting
+const module = await import("./heavy-module")
+```
+
+## DECISION FRAMEWORK
+
+### When You Need to Import Something:
+
+```
+Q: Do I need to import a module?
+├─ YES → Use ES6 import at the top of the file
+│   ├─ Named exports? → import { Name } from "module"
+│   ├─ Default export? → import Name from "module"
+│   ├─ All exports? → import * as Name from "module"
+│   ├─ Type only? → import type { Type } from "module"
+│   └─ Side effects? → import "module"
+│
+└─ Need dynamic loading? → Use dynamic import()
+    ✅ const module = await import("./module")
+    ❌ const module = require("./module")
+```
+
+## ENFORCEMENT RULES
+
+### Pre-Commit Checklist:
+
+- [ ] ✅ No `require(` found in any .ts/.tsx/.js/.jsx files
+- [ ] ✅ All imports are at the top of the file
+- [ ] ✅ All imports use ES6 syntax
+- [ ] ✅ Type imports use `import type` when appropriate
+- [ ] ✅ ESLint passes without `require` warnings
+
+### Code Review Requirements:
+
+- **MANDATORY**: Reviewer MUST reject any PR containing `require()`
+- **MANDATORY**: Check imports are properly typed
+- **MANDATORY**: Verify no mixed module syntax
+
+## AUTOMATED DETECTION
+
+```bash
+# Search for require usage (run before commit)
+grep -r "require(" src/ --include="*.ts" --include="*.tsx" --include="*.js" --include="*.jsx"
+
+# If any results found → FIX IMMEDIATELY
+```
+
+## MIGRATION STRATEGY
+
+### Step 1: Identify require() usage
+
+```typescript
+// ❌ WRONG (found in code)
+const { helper } = require("@/utils/helper")
+```
+
+### Step 2: Move to top of file with ES6 import
+
+```typescript
+// ✅ CORRECT
+import { helper } from "@/utils/helper"
+```
+
+### Step 3: Update all usages
+
+```typescript
+// Usage remains the same
+helper.doSomething()
+```
+
+### Step 4: Verify types work
+
+```typescript
+// TypeScript should now provide proper type checking
+helper.doSomething() // ✅ Autocomplete works
+helper.nonExistent() // ❌ TypeScript error
+```
+
+## SPECIFIC SCENARIOS
+
+### Scenario 1: Lazy Loading
+
+```typescript
+// ❌ WRONG
+function loadModule() {
+  const module = require("./heavy-module")
+  return module.default
+}
+
+// ✅ CORRECT: Use dynamic import
+async function loadModule() {
+  const module = await import("./heavy-module")
+  return module.default
+}
+```
+
+### Scenario 2: Conditional Loading
+
+```typescript
+// ❌ WRONG
+if (process.env.NODE_ENV === "development") {
+  const devTools = require("./dev-tools")
+  devTools.init()
+}
+
+// ✅ CORRECT: Use dynamic import
+if (process.env.NODE_ENV === "development") {
+  const { init } = await import("./dev-tools")
+  init()
+}
+```
+
+### Scenario 3: JSON Files
+
+```typescript
+// ❌ WRONG
+const config = require("./config.json")
+
+// ✅ CORRECT: Use import assertion (if supported)
+import config from "./config.json" assert { type: "json" }
+
+// ✅ CORRECT: Or use standard import
+import config from "./config.json"
+```
+
+### Scenario 4: Node.js Built-ins
+
+```typescript
+// ❌ WRONG
+const fs = require("fs")
+const path = require("path")
+
+// ✅ CORRECT
+import fs from "fs"
+import path from "path"
+
+// ✅ BETTER: Named imports for Node.js built-ins
+import { readFile, writeFile } from "fs/promises"
+import { join, resolve } from "path"
+```
+
+## EXCEPTION HANDLING
+
+### Q: When is require() acceptable?
+
+**A: NEVER in this codebase.**
+
+### Q: What about package.json or config files?
+
+**A: Those are not TypeScript/JavaScript source files. This rule only applies to .ts/.tsx/.js/.jsx files.**
+
+### Q: What about third-party libraries using require?
+
+**A: Third-party code is fine. YOU must use ES6 imports to consume them.**
+
+### Q: What if I absolutely need dynamic require?
+
+**A: Use dynamic `import()` instead. It's async but provides all benefits of ES6 modules.**
+
+## BENEFITS OF ES6 IMPORTS
+
+1. **Type Safety**: Full TypeScript type checking and inference
+2. **Static Analysis**: Better IDE support (autocomplete, go-to-definition)
+3. **Tree Shaking**: Unused exports are removed from bundle
+4. **Better Performance**: Modern bundlers optimize ES6 modules
+5. **Consistency**: One module system across entire codebase
+6. **Future Proof**: ES6 is the standard, CommonJS is legacy
+
+## MENTAL MODEL
+
+**Think**: "ES6 import is the modern, type-safe way"
+**NOT**: "require() is quicker to type"
+
+**Remember**:
+
+- `require()` = Legacy CommonJS = Type unsafe = ❌
+- `import` = Modern ES6 = Type safe = ✅
+
+## IMMEDIATE ACTION
+
+When you see or write `require()`:
+
+1. **STOP** - Do not commit
+2. **CONVERT** - Change to ES6 import
+3. **MOVE** - Place import at top of file
+4. **VERIFY** - Check types are working
+5. **TEST** - Ensure functionality unchanged
+
+## SUCCESS METRICS
+
+- ✅ Zero `require()` in source code
+- ✅ 100% ES6 import usage
+- ✅ Full TypeScript type coverage
+- ✅ ESLint clean
+- ✅ Proper IDE autocomplete
+
+**COMMITMENT**: I will NEVER use `require()` and ALWAYS use ES6 `import` statements.
+
+---
+
+**FINAL REMINDER**: If you see `require(` in TypeScript/JavaScript source code → It's WRONG → Convert to `import` IMMEDIATELY.
