@@ -88,7 +88,7 @@ const AssetForm: React.FC<Props> = ({ onSave, onClose, initialData }) => {
               <option value={AssetCategory.STOCK}>주식/ETF</option>
               <option value={AssetCategory.VIRTUAL_ASSET}>가상자산</option>
               <option value={AssetCategory.REAL_ESTATE}>부동산</option>
-              <option value={AssetCategory.LOAN}>대출 및 부채</option>
+              <option value={AssetCategory.LOAN}>대출</option>
             </select>
           </div>
 
