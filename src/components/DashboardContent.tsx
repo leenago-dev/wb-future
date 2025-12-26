@@ -12,6 +12,7 @@ import HistoryChart from '@/components/HistoryChart';
 import ProfitHistoryChart from '@/components/ProfitHistoryChart';
 import AssetLiabilityBarChart from '@/components/AssetLiabilityBarChart';
 import DsrCalculator from '@/components/DsrCalculator';
+import StockCard from '@/components/StockCard';
 
 interface DashboardContentProps {
   currentView: ViewType;
@@ -118,16 +119,19 @@ export default function DashboardContent({ currentView, title }: DashboardConten
         {viewMode === 'Assets' ? (
           <div className="space-y-6">
             {currentView === 'pension' && (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div className="bg-white p-6 rounded-3xl border shadow-sm">
-                  <h2 className="text-base font-black text-gray-800 mb-6 flex items-center gap-2">🌍 국가별 투자 비중</h2>
-                  <Charts assets={filteredAssets} groupBy="country" />
+              <>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div className="bg-white p-6 rounded-3xl border shadow-sm">
+                    <h2 className="text-base font-black text-gray-800 mb-6 flex items-center gap-2">🌍 국가별 투자 비중</h2>
+                    <Charts assets={filteredAssets} groupBy="country" />
+                  </div>
+                  <div className="bg-white p-6 rounded-3xl border shadow-sm">
+                    <h2 className="text-base font-black text-gray-800 mb-6 flex items-center gap-2">📦 종목별 투자 비중</h2>
+                    <Charts assets={filteredAssets} groupBy="name" />
+                  </div>
                 </div>
-                <div className="bg-white p-6 rounded-3xl border shadow-sm">
-                  <h2 className="text-base font-black text-gray-800 mb-6 flex items-center gap-2">📦 종목별 투자 비중</h2>
-                  <Charts assets={filteredAssets} groupBy="name" />
-                </div>
-              </div>
+                <StockCard />
+              </>
             )}
 
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">

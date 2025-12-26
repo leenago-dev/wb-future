@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { Asset, AssetCategory } from '@/types';
-import { getUserProfile, saveUserProfile } from '@/services/mockApi';
+import { getUserProfile, saveUserProfile } from '@/services/profileStorage';
 
 interface Props {
   assets: Asset[];

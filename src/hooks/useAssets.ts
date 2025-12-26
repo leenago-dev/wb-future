@@ -2,7 +2,9 @@
 
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { Asset, AssetCategory, AssetOwner, DashboardStats, HistoryData } from '@/types';
-import { getAssets, saveAsset, deleteAsset, fetchCurrentPrice } from '@/services/mockApi';
+import { getAssets, saveAsset, deleteAsset } from '@/services/assetStorage';
+import { fetchCurrentPrice } from '@/services/priceApi';
+import { generateUUID } from '@/utils/uuid';
 
 export type ViewType = 'dashboard' | 'real-estate' | 'pension' | 'crypto';
 
@@ -18,7 +20,7 @@ export function useAssets(selectedOwner: 'Total' | AssetOwner, currentView: View
     const updatedAssets = await Promise.all(data.map(async (asset) => {
       if ((asset.category === AssetCategory.STOCK || asset.category === AssetCategory.PENSION || asset.category === AssetCategory.VIRTUAL_ASSET) && asset.metadata.ticker) {
         try {
-          const price = await fetchCurrentPrice(asset.metadata.ticker);
+          const price = await fetchCurrentPrice(asset.metadata.ticker, asset.category);
           return { ...asset, current_price: price };
         } catch (e) {
           return asset;
@@ -153,7 +155,7 @@ export function useAssets(selectedOwner: 'Total' | AssetOwner, currentView: View
     const now = new Date().toISOString();
     const newAsset: Asset = {
       ...assetData,
-      id: editingAsset?.id || crypto.randomUUID(),
+      id: editingAsset?.id || generateUUID(),
       user_id: 'leena-husband-uuid',
       created_at: editingAsset?.created_at || now,
       updated_at: now

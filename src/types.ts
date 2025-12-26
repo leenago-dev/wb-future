@@ -33,7 +33,7 @@ export interface Asset {
   owner: AssetOwner;
   category: AssetCategory;
   name: string;
-  amount: number; 
+  amount: number;
   metadata: AssetMetadata;
   created_at: string;
   updated_at: string;
