@@ -1,7 +1,8 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { AssetCategory, Asset, AssetOwner, LoanType, RepaymentType } from '@/types';
+import { quoteCache } from '@/services/quoteCache';
 
 interface Props {
   onSave: (asset: Omit<Asset, 'id' | 'updated_at' | 'user_id' | 'created_at'>) => void;
@@ -28,6 +29,50 @@ const AssetForm: React.FC<Props> = ({ onSave, onClose, initialData }) => {
   const [repaymentType, setRepaymentType] = useState<RepaymentType>(initialData?.metadata.repayment_type || '만기일시상환');
   const [loanPeriod, setLoanPeriod] = useState<number>(initialData?.metadata.loan_period || 12);
   const [isDsrExcluded, setIsDsrExcluded] = useState<boolean>(initialData?.metadata.is_dsr_excluded || false);
+  const [isFetchingName, setIsFetchingName] = useState(false);
+  const nameFetchedRef = useRef(false);
+
+  // 티커가 변경되면 자동으로 이름 가져오기 (주식/퇴직연금만)
+  useEffect(() => {
+    const shouldFetchName =
+      (category === AssetCategory.STOCK || category === AssetCategory.PENSION) &&
+      ticker.trim().length > 0 &&
+      !nameFetchedRef.current;
+
+    if (!shouldFetchName) return;
+
+    const timeoutId = setTimeout(async () => {
+      setIsFetchingName(true);
+      try {
+        const data = await quoteCache.getQuote(ticker.trim());
+        if (data.name && !name) {
+          setName(data.name);
+          nameFetchedRef.current = true;
+        }
+      } catch (error) {
+        // 에러는 조용히 무시 (사용자가 수동으로 입력할 수 있음)
+      } finally {
+        setIsFetchingName(false);
+      }
+    }, 800); // 800ms debounce
+
+    return () => clearTimeout(timeoutId);
+  }, [ticker, category, name]);
+
+  // 이름을 수동으로 수정하면 자동 가져오기 비활성화
+  const handleNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setName(e.target.value);
+    if (e.target.value.trim() !== '') {
+      nameFetchedRef.current = true;
+    }
+  };
+
+  // 티커가 변경되면 자동 가져오기 다시 활성화
+  useEffect(() => {
+    if (ticker.trim() === '') {
+      nameFetchedRef.current = false;
+    }
+  }, [ticker]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -93,8 +138,20 @@ const AssetForm: React.FC<Props> = ({ onSave, onClose, initialData }) => {
           </div>
 
           <div>
-            <label className="block text-xs font-black text-gray-400 uppercase tracking-widest mb-2">이름</label>
-            <input required type="text" value={name} onChange={(e) => setName(e.target.value)} placeholder="예: 미래에셋 퇴직연금, 삼성전자 등" className="w-full p-3 bg-gray-50 border border-gray-200 rounded-2xl focus:ring-2 focus:ring-blue-500 outline-none font-bold" />
+            <label className="block text-xs font-black text-gray-400 uppercase tracking-widest mb-2">
+              이름
+              {isFetchingName && (
+                <span className="ml-2 text-[10px] text-blue-500 font-normal">조회 중...</span>
+              )}
+            </label>
+            <input
+              required
+              type="text"
+              value={name}
+              onChange={handleNameChange}
+              placeholder="예: 미래에셋 퇴직연금, 삼성전자 등"
+              className="w-full p-3 bg-gray-50 border border-gray-200 rounded-2xl focus:ring-2 focus:ring-blue-500 outline-none font-bold"
+            />
           </div>
 
           {(category === AssetCategory.PENSION || category === AssetCategory.STOCK || category === AssetCategory.VIRTUAL_ASSET) && (
@@ -102,7 +159,14 @@ const AssetForm: React.FC<Props> = ({ onSave, onClose, initialData }) => {
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="block text-xs font-black text-gray-400 mb-1">티커 (Ticker)</label>
-                  <input required type="text" value={ticker} onChange={(e) => setTicker(e.target.value.toUpperCase())} placeholder="BTC" className="w-full p-3 bg-gray-50 border border-gray-200 rounded-2xl font-bold" />
+                  <input
+                    required
+                    type="text"
+                    value={ticker}
+                    onChange={(e) => setTicker(e.target.value.toUpperCase())}
+                    placeholder={category === AssetCategory.VIRTUAL_ASSET ? "BTC, ETH" : "AAPL, TSLA, 005930.KS"}
+                    className="w-full p-3 bg-gray-50 border border-gray-200 rounded-2xl font-bold"
+                  />
                 </div>
                 <div>
                   <label className="block text-xs font-black text-gray-400 mb-1">수량</label>
