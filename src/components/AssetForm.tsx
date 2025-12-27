@@ -100,14 +100,58 @@ const TextInput = <T extends string | number = string | number>({
   transform,
   autoFocus,
 }: TextInputProps<T>) => {
-  const formatNumberWithCommas = (num: number): string => {
-    if (num === 0) return '';
-    return num.toLocaleString('ko-KR');
+  const getInitialValue = (): string => {
+    if (type === 'number') {
+      const numValue = value as number;
+      if (numValue === 0) return '';
+      return numValue.toLocaleString('ko-KR', {
+        minimumFractionDigits: 0,
+        maximumFractionDigits: 20,
+      });
+    }
+    return String(value);
+  };
+
+  const [inputValue, setInputValue] = useState<string>(getInitialValue());
+  const prevValueRef = useRef<T>(value);
+  const isUserInputtingRef = useRef<boolean>(false);
+
+  useEffect(() => {
+    if (isUserInputtingRef.current) {
+      isUserInputtingRef.current = false;
+      return;
+    }
+
+    if (prevValueRef.current !== value) {
+      if (type === 'number') {
+        const numValue = value as number;
+        if (numValue === 0) {
+          setInputValue('');
+        } else {
+          const formatted = numValue.toLocaleString('ko-KR', {
+            minimumFractionDigits: 0,
+            maximumFractionDigits: 20,
+          });
+          setInputValue(formatted);
+        }
+      } else {
+        setInputValue(String(value));
+      }
+      prevValueRef.current = value;
+    }
+  }, [value, type]);
+
+  const isValidNumberInput = (str: string): boolean => {
+    const cleaned = str.replace(/,/g, '').trim();
+    if (cleaned === '' || cleaned === '-') return true;
+    if (cleaned === '.') return true;
+    const numberRegex = /^-?\d*\.?\d*$/;
+    return numberRegex.test(cleaned);
   };
 
   const parseNumberFromString = (str: string): number => {
-    const cleaned = str.replace(/,/g, '');
-    if (cleaned === '') return 0;
+    const cleaned = str.replace(/,/g, '').trim();
+    if (cleaned === '' || cleaned === '-' || cleaned === '.') return 0;
     const parsed = Number(cleaned);
     return isNaN(parsed) ? 0 : parsed;
   };
@@ -119,17 +163,40 @@ const TextInput = <T extends string | number = string | number>({
       newValue = transform(newValue);
     }
 
+    isUserInputtingRef.current = true;
+
     if (type === 'number') {
-      const numValue = parseNumberFromString(newValue);
-      onChange(numValue as T);
+      if (isValidNumberInput(newValue)) {
+        setInputValue(newValue);
+        const cleaned = newValue.replace(/,/g, '').trim();
+        if (cleaned === '' || cleaned === '-' || cleaned === '.') {
+          onChange(0 as T);
+        } else {
+          const numValue = parseNumberFromString(newValue);
+          onChange(numValue as T);
+        }
+      }
     } else {
+      setInputValue(newValue);
       onChange(newValue as T);
     }
   };
 
-  const displayValue = type === 'number'
-    ? (value === 0 ? '' : formatNumberWithCommas(value as number))
-    : String(value);
+  const handleBlur = () => {
+    if (type === 'number') {
+      isUserInputtingRef.current = false;
+      const numValue = parseNumberFromString(inputValue);
+      const formatted = numValue === 0 ? '' : numValue.toLocaleString('ko-KR', {
+        minimumFractionDigits: 0,
+        maximumFractionDigits: 20,
+      });
+      setInputValue(formatted);
+      onChange(numValue as T);
+      prevValueRef.current = numValue as T;
+    }
+  };
+
+  const displayValue = inputValue;
 
   return (
     <Input
@@ -138,6 +205,7 @@ const TextInput = <T extends string | number = string | number>({
       step={step}
       value={displayValue}
       onChange={handleChange}
+      onBlur={handleBlur}
       placeholder={placeholder}
       className={className}
       autoFocus={autoFocus}
