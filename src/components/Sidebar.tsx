@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { LayoutDashboard, Home, Clock, TrendingUp, Coins, ChevronRight, ChevronsLeft, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
-import { SIDEBAR_MENU_ITEMS } from '@/config/app';
+import { SIDEBAR_MENU_ITEMS, SIDEBAR_USER_NAME } from '@/config/app';
 
 export type ViewType = 'dashboard' | 'real-estate' | 'pension' | 'stock' | 'crypto';
 
@@ -132,7 +132,7 @@ const Sidebar: React.FC<SidebarProps> = ({
             <div className="flex items-center gap-3 bg-slate-800/40 p-3 rounded-2xl">
               <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center font-bold text-sm shadow-inner">L</div>
               <div className="truncate">
-                <p className="text-sm font-bold text-white">Leena & Husband</p>
+                <p className="text-sm font-bold text-white">{SIDEBAR_USER_NAME}</p>
                 <p className="text-[10px] text-slate-500 uppercase font-semibold">Our Family Plan</p>
               </div>
             </div>

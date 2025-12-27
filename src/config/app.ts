@@ -47,14 +47,26 @@ export const OWNER_LABELS = {
   Common: '공통',
 } as const;
 
-// 소유자 필터 옵션 (표시 순서)
+// 소유자 필터 옵션 (표시 순서) - 타입 값 사용
 export const OWNER_FILTER_OPTIONS = ['Total', 'Husband', 'Leena', 'Common'] as const;
+
+// 소유자 폼 옵션 (Total 제외, 폼에서 사용) - 타입 값 사용
+export const OWNER_FORM_OPTIONS = ['Husband', 'Leena', 'Common'] as const;
+
+// 기본 소유자 - 타입 값 사용
+export const DEFAULT_OWNER = 'Leena' as const;
+
+// 사이드바 사용자 이름 표시
+export const SIDEBAR_USER_NAME = '웡밤이' as const;
+
+// 국가 목록
+export const COUNTRIES = ['한국', '미국', '중국', '일본', '기타'] as const;
 
 // 사이드바 메뉴 아이템 설정
 export const SIDEBAR_MENU_ITEMS = [
   { id: 'dashboard', label: '종합 대시보드' },
-  { id: 'real-estate', label: '부동산 집중 분석' },
-  { id: 'pension', label: '퇴직연금 집중 분석' },
-  { id: 'stock', label: '주식 집중 분석' },
-  { id: 'crypto', label: '가상자산 집중 분석' },
+  { id: 'real-estate', label: '부동산 분석' },
+  { id: 'pension', label: '퇴직연금 분석' },
+  { id: 'stock', label: '주식 분석' },
+  { id: 'crypto', label: '가상자산 분석' },
 ] as const;

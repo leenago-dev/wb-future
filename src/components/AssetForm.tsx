@@ -11,14 +11,13 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Checkbox } from '@/components/ui/checkbox';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
+import { OWNER_FORM_OPTIONS, OWNER_LABELS, DEFAULT_OWNER, COUNTRIES } from '@/config/app';
 
 interface Props {
   onSave: (asset: Omit<Asset, 'id' | 'updated_at' | 'user_id' | 'created_at'>) => void;
   onClose: () => void;
   initialData?: Asset;
 }
-
-const COUNTRIES = ['한국', '미국', '중국', '일본', '기타'];
 
 const GRID_LAYOUT_CLASSES = 'grid grid-cols-2 gap-4';
 
@@ -120,7 +119,7 @@ const TextInput = <T extends string | number = string | number>({
 
 const AssetForm: React.FC<Props> = ({ onSave, onClose, initialData }) => {
   const [category, setCategory] = useState<AssetCategory>(initialData?.category || AssetCategory.CASH);
-  const [owner, setOwner] = useState<AssetOwner>(initialData?.owner || 'Leena');
+  const [owner, setOwner] = useState<AssetOwner>(initialData?.owner || DEFAULT_OWNER);
   const [name, setName] = useState(initialData?.name || '');
   const [amount, setAmount] = useState(initialData?.amount || 0);
 
@@ -245,17 +244,20 @@ const AssetForm: React.FC<Props> = ({ onSave, onClose, initialData }) => {
           <div>
             <Label className="block text-xs font-black text-muted-foreground uppercase tracking-widest mb-2">소유자</Label>
             <div className="flex bg-muted p-1.5 rounded-2xl">
-              {['Leena', 'Husband', 'Common'].map(o => (
-                <Button
-                  key={o}
-                  type="button"
-                  variant={owner === o ? 'default' : 'ghost'}
-                  onClick={() => setOwner(o as AssetOwner)}
-                  className="flex-1 py-2 text-xs font-bold rounded-xl"
-                >
-                  {o === 'Common' ? '공통' : o}
-                </Button>
-              ))}
+              {OWNER_FORM_OPTIONS.map((o) => {
+                const ownerValue = o as AssetOwner;
+                return (
+                  <Button
+                    key={o}
+                    type="button"
+                    variant={owner === ownerValue ? 'default' : 'ghost'}
+                    onClick={() => setOwner(ownerValue)}
+                    className="flex-1 py-2 text-xs font-bold rounded-xl"
+                  >
+                    {OWNER_LABELS[ownerValue]}
+                  </Button>
+                );
+              })}
             </div>
           </div>
 
