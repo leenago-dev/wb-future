@@ -117,7 +117,7 @@ export default function DashboardContent({ currentView, title }: DashboardConten
 
         {viewMode === 'Assets' ? (
           <div className="space-y-6">
-            {currentView === 'pension' && (
+            {(currentView === 'pension' || currentView === 'stock') && (
               <>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div className="bg-white p-6 rounded-3xl border shadow-sm">
@@ -147,7 +147,12 @@ export default function DashboardContent({ currentView, title }: DashboardConten
                 )}
 
                 <div className="bg-indigo-900 p-6 rounded-3xl shadow-xl relative overflow-hidden group">
-                  <div className="absolute top-0 right-0 p-4 opacity-10 pointer-events-none"><svg className="w-24 h-24 text-white" fill="currentColor" viewBox="0 0 20 20"><path d="M11 3a1 1 0 10-2 0v1a1 1 0 102 0V3zM15.657 5.757a1 1 0 00-1.414-1.414l-.707.707a1 1 0 001.414 1.414l.707-.707zM18 10a1 1 0 01-1 1h-1a1 1 0 110-2h1a1 1 0 011 1zM5.05 6.464A1 1 0 106.464 5.05l-.707-.707a1 1 0 00-1.414 1.414l.707.707zM5 10a1 1 0 01-1 1H3a1 1 0 110-2h1a1 1 0 011 1zM8 16v-1a1 1 0 112 0v1a1 1 0 11-2 0zM13.536 14.95a1 1 0 011.414 1.414l-.707.707a1 1 0 01-1.414-1.414l.707-.707zM16.243 16.243a1 1 0 01-1.414 0l-.707-.707a1 1 0 111.414-1.414l.707.707a1 1 0 010 1.414z"></path></svg></div>
+                  {/* 배경 장식 아이콘 (AI 스파크 아이콘) */}
+                  <div className="absolute top-0 right-0 p-4 opacity-10 pointer-events-none">
+                    <svg className="w-24 h-24 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
+                    </svg>
+                  </div>
                   <div className="flex items-center justify-between mb-4 relative z-10">
                     <h2 className="text-base font-black text-white flex items-center gap-2">✨ Wealth AI</h2>
                     <button onClick={() => getAiAdvice(filteredAssets, stats, selectedOwner, currentView)} disabled={isAiThinking || filteredAssets.length === 0} className="text-[10px] font-black bg-white text-indigo-900 px-3 py-1.5 rounded-full hover:bg-indigo-50 active:scale-95 disabled:bg-gray-400">
@@ -163,12 +168,12 @@ export default function DashboardContent({ currentView, title }: DashboardConten
           </div>
         ) : (
           <div className="space-y-6">
-            <div className={`grid grid-cols-1 ${currentView === 'pension' ? 'lg:grid-cols-2' : ''} gap-6`}>
+            <div className={`grid grid-cols-1 ${(currentView === 'pension' || currentView === 'stock') ? 'lg:grid-cols-2' : ''} gap-6`}>
               <div className="bg-white p-6 sm:p-8 rounded-3xl border shadow-sm">
                 <h3 className="text-sm font-black text-gray-400 uppercase tracking-widest mb-4">순자산/총자산 추이</h3>
                 <HistoryChart data={historyData} />
               </div>
-              {currentView === 'pension' && (
+              {(currentView === 'pension' || currentView === 'stock') && (
                 <div className="bg-white p-6 sm:p-8 rounded-3xl border shadow-sm">
                   <h3 className="text-sm font-black text-gray-400 uppercase tracking-widest mb-4">수익금/수익률 추이</h3>
                   <ProfitHistoryChart data={historyData} />

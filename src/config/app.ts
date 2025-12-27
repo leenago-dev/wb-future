@@ -49,3 +49,12 @@ export const OWNER_LABELS = {
 
 // 소유자 필터 옵션 (표시 순서)
 export const OWNER_FILTER_OPTIONS = ['Total', 'Husband', 'Leena', 'Common'] as const;
+
+// 사이드바 메뉴 아이템 설정
+export const SIDEBAR_MENU_ITEMS = [
+  { id: 'dashboard', label: '종합 대시보드' },
+  { id: 'real-estate', label: '부동산 집중 분석' },
+  { id: 'pension', label: '퇴직연금 집중 분석' },
+  { id: 'stock', label: '주식 집중 분석' },
+  { id: 'crypto', label: '가상자산 집중 분석' },
+] as const;
