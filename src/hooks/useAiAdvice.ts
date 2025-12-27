@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { GoogleGenAI } from '@google/genai';
 import { Asset, DashboardStats, AssetOwner } from '@/types';
 import { ViewType } from './useAssets';
+import { OWNER_LABELS } from '@/config/app';
 
 export function useAiAdvice() {
   const [aiAdvice, setAiAdvice] = useState<string>('');
@@ -23,9 +24,10 @@ export function useAiAdvice() {
         return;
       }
       const ai = new GoogleGenAI({ apiKey });
-      const summary = filteredAssets.map(a => `${a.category}: ${a.name} (${a.owner})`).join(', ');
+      const summary = filteredAssets.map(a => `${a.category}: ${a.name} (${OWNER_LABELS[a.owner]})`).join(', ');
       const viewPrompt = currentView !== 'dashboard' ? `${currentView} 관점에서의 분석을 포함해줘.` : '';
-      const prompt = `현재 ${selectedOwner}의 재무 상태: 총자산 ${stats.totalAssets}원, 부채 ${stats.totalLiabilities}원, 순자산 ${stats.netWorth}원, 투자 수익률 ${stats.totalRoi.toFixed(2)}%. 구성: ${summary}. ${viewPrompt} 전문 재무 설계사로서 조언을 한국어 3줄로 해줘.`;
+      const ownerLabel = selectedOwner === 'Total' ? '전체' : OWNER_LABELS[selectedOwner];
+      const prompt = `현재 ${ownerLabel}의 재무 상태: 총자산 ${stats.totalAssets}원, 부채 ${stats.totalLiabilities}원, 순자산 ${stats.netWorth}원, 투자 수익률 ${stats.totalRoi.toFixed(2)}%. 구성: ${summary}. ${viewPrompt} 전문 재무 설계사로서 조언을 한국어 3줄로 해줘.`;
       const response = await ai.models.generateContent({ model: 'gemini-3-flash-preview', contents: prompt });
       setAiAdvice(response.text || '조언을 가져오지 못했습니다.');
     } catch (e) {

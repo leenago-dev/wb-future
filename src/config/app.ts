@@ -39,6 +39,30 @@ export const HISTORY = {
   MARKET_VARIANCE_FACTOR: 0.015, // 월별 시장 변동 계수
 } as const;
 
+// DSR 설정
+export const DSR = {
+  BANK_LIMIT_PERCENTAGE: 40, // 금융권 DSR 임계값 (2025.12. 기준 40%)
+  FORMULA_TITLE: 'DSR 산정 공식',
+  FORMULA: 'DSR = (모든 대출의 연간 원리금 상환액) ÷ (연 소득) × 100',
+  REPAYMENT_METHOD_TITLE: '상환 방식별 산정 (금융권 기준)',
+  REPAYMENT_METHODS: [
+    { type: '만기일시', formula: '(원금 / 대출기간) + 연간 이자' },
+    { type: '원리금균등', formula: '연간 총 원리금 상환액' },
+  ] as const,
+  EXCLUDED_TARGETS_TITLE: '주요 제외 대상 (DSR 미반영)',
+  EXCLUDED_TARGETS: [
+    '전세자금대출',
+    '보금자리론/특례보금자리론',
+    '신생아 특례 구입·전세자금',
+    '분양주택 중도금대출',
+    '이주비 대출 / 추가분담금 중도금',
+    '서민금융상품 (새희망홀씨 등)',
+    '300만원 이하 소액 신용대출',
+    '보험계약대출 / 예적금 담보대출',
+    '할부·리스 및 현금서비스 등',
+  ] as const,
+} as const;
+
 // 소유자별 표시 이름
 export const OWNER_LABELS = {
   Total: '합계',

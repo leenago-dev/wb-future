@@ -79,10 +79,6 @@ export default function DashboardContent({ currentView, title }: DashboardConten
           </div>
         </div>
 
-        {currentView === 'real-estate' && (
-          <DsrCalculator assets={filteredAssets} />
-        )}
-
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
           <Card className="p-5 sm:p-6 rounded-3xl hover:border-primary/50 transition-colors">
             <CardContent className="p-0 flex flex-col justify-between">
@@ -121,6 +117,10 @@ export default function DashboardContent({ currentView, title }: DashboardConten
             </CardContent>
           </Card>
         </div>
+
+        {currentView === 'real-estate' && (
+          <DsrCalculator assets={filteredAssets} />
+        )}
 
         <Tabs value={viewMode} onValueChange={(value) => setViewMode(value as 'Assets' | 'History')} className="w-full">
           <TabsList className="w-full justify-start border-b rounded-none bg-transparent h-auto p-0">

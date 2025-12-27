@@ -2,8 +2,8 @@
 
 import React from 'react';
 import { Plus } from 'lucide-react';
-import { Asset, AssetCategory } from '@/types';
-import { EXCHANGE_RATE } from '@/config/app';
+import { Asset, AssetCategory, AssetOwner } from '@/types';
+import { EXCHANGE_RATE, OWNER_LABELS } from '@/config/app';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -106,7 +106,7 @@ const AssetList: React.FC<Props> = ({ assets, onEdit, onDelete, exchangeRate = E
                   <div className="flex-1">
                     <div className="flex items-center gap-2 mb-1 flex-wrap">
                       <p className="font-black text-foreground">{asset.name}</p>
-                      <Badge variant="secondary" className="text-[10px] uppercase">{asset.owner}</Badge>
+                      <Badge variant="secondary" className="text-[10px] uppercase">{OWNER_LABELS[asset.owner as AssetOwner]}</Badge>
                       {asset.metadata.country && (
                         <Badge variant="outline" className="text-[10px]">📍 {asset.metadata.country}</Badge>
                       )}
