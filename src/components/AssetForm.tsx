@@ -1,8 +1,16 @@
 'use client';
 
 import React, { useState, useEffect, useRef } from 'react';
+import { X } from 'lucide-react';
 import { AssetCategory, Asset, AssetOwner, LoanType, RepaymentType } from '@/types';
 import { quoteCache } from '@/services/quoteCache';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Button } from '@/components/ui/button';
+import { cn } from '@/lib/utils';
 
 interface Props {
   onSave: (asset: Omit<Asset, 'id' | 'updated_at' | 'user_id' | 'created_at'>) => void;
@@ -12,9 +20,6 @@ interface Props {
 
 const COUNTRIES = ['한국', '미국', '중국', '일본', '기타'];
 
-const INPUT_BASE_CLASSES = 'w-full p-3 bg-gray-50 border border-gray-200 rounded-2xl font-bold';
-const INPUT_FOCUS_CLASSES = 'focus:ring-2 focus:ring-blue-500 outline-none';
-const LABEL_BASE_CLASSES = 'block text-xs font-black text-gray-400 mb-1';
 const GRID_LAYOUT_CLASSES = 'grid grid-cols-2 gap-4';
 
 const TICKER_CATEGORIES = [
@@ -64,10 +69,11 @@ const FormField: React.FC<FormFieldProps> = ({
   className = '',
 }) => (
   <div className={className}>
-    <label className={LABEL_BASE_CLASSES}>
+    <Label className="text-xs font-black text-muted-foreground mb-1 uppercase tracking-widest">
       {label}
+      {required && <span className="text-destructive ml-1">*</span>}
       {labelSuffix}
-    </label>
+    </Label>
     {children}
   </div>
 );
@@ -100,46 +106,17 @@ const TextInput = <T extends string | number = string | number>({
   };
 
   return (
-    <input
+    <Input
       required={required}
       type={type}
       step={step}
       value={value}
       onChange={handleChange}
       placeholder={placeholder}
-      className={`${INPUT_BASE_CLASSES} ${INPUT_FOCUS_CLASSES} ${className}`}
+      className={cn('rounded-2xl font-bold', className)}
     />
   );
 };
-
-interface SelectInputProps {
-  value: string;
-  onChange: (value: string) => void;
-  options: Array<{ value: string; label: string }>;
-  required?: boolean;
-  className?: string;
-}
-
-const SelectInput: React.FC<SelectInputProps> = ({
-  value,
-  onChange,
-  options,
-  required,
-  className = '',
-}) => (
-  <select
-    required={required}
-    value={value}
-    onChange={(e) => onChange(e.target.value)}
-    className={`${INPUT_BASE_CLASSES} ${INPUT_FOCUS_CLASSES} ${className}`}
-  >
-    {options.map((option) => (
-      <option key={option.value} value={option.value}>
-        {option.label}
-      </option>
-    ))}
-  </select>
-);
 
 const AssetForm: React.FC<Props> = ({ onSave, onClose, initialData }) => {
   const [category, setCategory] = useState<AssetCategory>(initialData?.category || AssetCategory.CASH);
@@ -173,23 +150,17 @@ const AssetForm: React.FC<Props> = ({ onSave, onClose, initialData }) => {
     if (!shouldFetchName) return;
 
     const timeoutId = setTimeout(async () => {
-      // fetch 시작 시점의 티커를 저장 (비동기 작업 중 티커가 변경될 수 있음)
       const tickerAtFetchStart = ticker.trim();
       setIsFetchingName(true);
       try {
         const data = await quoteCache.getQuote(tickerAtFetchStart);
-        // fetch 완료 시점에 티커가 변경되었는지 확인
         const tickerStillMatches = tickerAtFetchStart === ticker.trim();
-        // 티커가 변경되지 않았고, nameFetchedRef가 false인 경우(티커가 변경되어 리셋된 경우) 항상 업데이트
-        // nameFetchedRef.current가 false라는 것은 티커가 변경되어 리셋되었다는 의미이므로, name 값과 관계없이 업데이트
         if (data.name && tickerStillMatches && !nameFetchedRef.current) {
           setName(data.name);
           nameFetchedRef.current = true;
         } else if (data.name && tickerStillMatches && nameFetchedRef.current && (!name || name.trim().length === 0)) {
-          // nameFetchedRef가 true이지만 이름이 비어있는 경우(초기 로드 등)에만 업데이트
           setName(data.name);
         }
-        // currency를 기반으로 국가 자동 설정
         if (tickerStillMatches && data.currency) {
           const newCountry = currencyToCountry(data.currency);
           if (newCountry !== country) {
@@ -197,16 +168,15 @@ const AssetForm: React.FC<Props> = ({ onSave, onClose, initialData }) => {
           }
         }
       } catch (error) {
-        // 에러는 조용히 무시 (사용자가 수동으로 입력할 수 있음)
+        // 에러는 조용히 무시
       } finally {
         setIsFetchingName(false);
       }
-    }, 800); // 800ms debounce
+    }, 800);
 
     return () => clearTimeout(timeoutId);
-  }, [ticker, category, name]);
+  }, [ticker, category, name, country]);
 
-  // 이름을 수동으로 수정하면 자동 가져오기 비활성화
   const handleNameChange = (newName: string) => {
     setName(newName);
     if (newName.trim() !== '') {
@@ -214,13 +184,10 @@ const AssetForm: React.FC<Props> = ({ onSave, onClose, initialData }) => {
     }
   };
 
-  // 티커가 변경되면 자동 가져오기 다시 활성화 및 이름 리셋
   useEffect(() => {
     const tickerChanged = ticker.trim() !== prevTickerRef.current.trim();
-    // 티커가 실제로 변경되었을 때만 리셋
     if (tickerChanged) {
       nameFetchedRef.current = false;
-      // 티커가 변경되고 새로운 티커가 비어있지 않으면 이름도 리셋
       if (ticker.trim().length > 0) {
         setName('');
       }
@@ -268,47 +235,45 @@ const AssetForm: React.FC<Props> = ({ onSave, onClose, initialData }) => {
   };
 
   return (
-    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-[100]">
-      <div className="bg-white rounded-3xl shadow-2xl w-full max-w-md overflow-hidden animate-in zoom-in duration-200">
-        <div className="px-6 py-5 border-b flex justify-between items-center bg-gray-50/50">
-          <h2 className="text-xl font-black text-gray-900">{initialData ? '수정하기' : '항목추가'}</h2>
-          <button onClick={onClose} className="text-gray-400 hover:text-gray-900 transition-colors">
-            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"></path></svg>
-          </button>
-        </div>
+    <Dialog open={true} onOpenChange={onClose}>
+      <DialogContent className="max-w-md rounded-3xl max-h-[85vh] overflow-hidden p-0">
+        <DialogHeader className="px-6 py-5 border-b bg-muted/50">
+          <DialogTitle className="text-xl font-black">{initialData ? '수정하기' : '항목추가'}</DialogTitle>
+        </DialogHeader>
 
-        <form onSubmit={handleSubmit} className="p-6 space-y-5 max-h-[85vh] overflow-y-auto custom-scrollbar">
+        <form onSubmit={handleSubmit} className="p-6 space-y-5 max-h-[calc(85vh-80px)] overflow-y-auto">
           <div>
-            <label className="block text-xs font-black text-gray-400 uppercase tracking-widest mb-2">소유자</label>
-            <div className="flex bg-gray-100 p-1.5 rounded-2xl">
+            <Label className="block text-xs font-black text-muted-foreground uppercase tracking-widest mb-2">소유자</Label>
+            <div className="flex bg-muted p-1.5 rounded-2xl">
               {['Leena', 'Husband', 'Common'].map(o => (
-                <button
+                <Button
                   key={o}
                   type="button"
+                  variant={owner === o ? 'default' : 'ghost'}
                   onClick={() => setOwner(o as AssetOwner)}
-                  className={`flex-1 py-2 text-xs font-bold rounded-xl transition-all ${owner === o ? 'bg-white shadow-sm text-blue-600 scale-100' : 'text-gray-400 hover:text-gray-600'}`}
-                >{o === 'Common' ? '공통' : o}</button>
+                  className="flex-1 py-2 text-xs font-bold rounded-xl"
+                >
+                  {o === 'Common' ? '공통' : o}
+                </Button>
               ))}
             </div>
           </div>
 
           <FormField label="카테고리" className="uppercase tracking-widest">
-            <SelectInput
-              value={category}
-              onChange={(val) => setCategory(val as AssetCategory)}
-              options={[
-                { value: AssetCategory.CASH, label: '현금성 자산' },
-                { value: AssetCategory.PENSION, label: '퇴직연금' },
-                { value: AssetCategory.STOCK, label: '주식/ETF' },
-                { value: AssetCategory.VIRTUAL_ASSET, label: '가상자산' },
-                { value: AssetCategory.REAL_ESTATE, label: '부동산' },
-                { value: AssetCategory.LOAN, label: '대출' },
-              ]}
-              className="text-sm"
-            />
+            <Select value={category} onValueChange={(val) => setCategory(val as AssetCategory)}>
+              <SelectTrigger className="rounded-2xl font-bold">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value={AssetCategory.CASH}>현금성 자산</SelectItem>
+                <SelectItem value={AssetCategory.PENSION}>퇴직연금</SelectItem>
+                <SelectItem value={AssetCategory.STOCK}>주식/ETF</SelectItem>
+                <SelectItem value={AssetCategory.VIRTUAL_ASSET}>가상자산</SelectItem>
+                <SelectItem value={AssetCategory.REAL_ESTATE}>부동산</SelectItem>
+                <SelectItem value={AssetCategory.LOAN}>대출</SelectItem>
+              </SelectContent>
+            </Select>
           </FormField>
-
-
 
           {isTickerCategory(category) && (
             <>
@@ -328,7 +293,7 @@ const AssetForm: React.FC<Props> = ({ onSave, onClose, initialData }) => {
                   required
                   labelSuffix={
                     isFetchingName && (
-                      <span className="ml-2 text-[10px] text-blue-500 font-normal">조회 중...</span>
+                      <span className="ml-2 text-[10px] text-primary font-normal">조회 중...</span>
                     )
                   }
                 >
@@ -364,12 +329,16 @@ const AssetForm: React.FC<Props> = ({ onSave, onClose, initialData }) => {
 
               {isCountryCategory(category) && (
                 <FormField label="국가" required>
-                  <SelectInput
-                    value={country}
-                    onChange={setCountry}
-                    options={COUNTRIES.map((c) => ({ value: c, label: c }))}
-                    className="text-sm"
-                  />
+                  <Select value={country} onValueChange={setCountry}>
+                    <SelectTrigger className="rounded-2xl font-bold">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {COUNTRIES.map((c) => (
+                        <SelectItem key={c} value={c}>{c}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </FormField>
               )}
             </>
@@ -407,75 +376,74 @@ const AssetForm: React.FC<Props> = ({ onSave, onClose, initialData }) => {
           )}
 
           {category === AssetCategory.LOAN && (
-            <div className="space-y-4 p-5 bg-red-50/50 rounded-3xl border border-red-100">
+            <div className="space-y-4 p-5 bg-destructive/5 rounded-3xl border border-destructive/20">
               <div className={GRID_LAYOUT_CLASSES}>
-                <FormField label="대출 종류" className="text-[10px] text-red-400 uppercase">
-                  <SelectInput
-                    value={loanType}
-                    onChange={(val) => setLoanType(val as LoanType)}
-                    options={[
-                      { value: '신용대출', label: '신용대출' },
-                      { value: '주택담보대출', label: '주택담보대출' },
-                      { value: '마이너스통장', label: '마이너스통장' },
-                    ]}
-                    className="p-2 bg-white border-red-100 rounded-xl text-xs"
-                  />
+                <FormField label="대출 종류" className="text-[10px] text-destructive/70 uppercase">
+                  <Select value={loanType} onValueChange={(val) => setLoanType(val as LoanType)}>
+                    <SelectTrigger className="p-2 bg-background border-destructive/20 rounded-xl text-xs">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="신용대출">신용대출</SelectItem>
+                      <SelectItem value="주택담보대출">주택담보대출</SelectItem>
+                      <SelectItem value="마이너스통장">마이너스통장</SelectItem>
+                    </SelectContent>
+                  </Select>
                 </FormField>
-                <FormField label="이율 (%)" required className="text-[10px] text-red-400 uppercase">
+                <FormField label="이율 (%)" required className="text-[10px] text-destructive/70 uppercase">
                   <TextInput
                     type="number"
                     step="0.01"
                     value={interestRate}
                     onChange={setInterestRate}
                     required
-                    className="p-2 bg-white border-red-100 rounded-xl text-xs"
+                    className="p-2 bg-background border-destructive/20 rounded-xl text-xs"
                   />
                 </FormField>
               </div>
-              <FormField label="상환 방식" className="text-[10px] text-red-400 uppercase">
-                <SelectInput
-                  value={repaymentType}
-                  onChange={(val) => setRepaymentType(val as RepaymentType)}
-                  options={[
-                    { value: '만기일시상환', label: '만기일시상환' },
-                    { value: '원리금균등분할상환', label: '원리금균등분할상환' },
-                  ]}
-                  className="p-2 bg-white border-red-100 rounded-xl text-xs"
-                />
+              <FormField label="상환 방식" className="text-[10px] text-destructive/70 uppercase">
+                <Select value={repaymentType} onValueChange={(val) => setRepaymentType(val as RepaymentType)}>
+                  <SelectTrigger className="p-2 bg-background border-destructive/20 rounded-xl text-xs">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="만기일시상환">만기일시상환</SelectItem>
+                    <SelectItem value="원리금균등분할상환">원리금균등분할상환</SelectItem>
+                  </SelectContent>
+                </Select>
               </FormField>
               <div className={GRID_LAYOUT_CLASSES}>
-                <FormField label="기간 (개월)" required className="text-[10px] text-red-400 uppercase">
+                <FormField label="기간 (개월)" required className="text-[10px] text-destructive/70 uppercase">
                   <TextInput
                     type="number"
                     value={loanPeriod}
                     onChange={setLoanPeriod}
                     required
-                    className="p-2 bg-white border-red-100 rounded-xl text-xs"
+                    className="p-2 bg-background border-destructive/20 rounded-xl text-xs"
                   />
                 </FormField>
-                <FormField label="대출 원금" required className="text-[10px] text-red-400 uppercase">
+                <FormField label="대출 원금" required className="text-[10px] text-destructive/70 uppercase">
                   <TextInput
                     type="number"
                     value={amount}
                     onChange={setAmount}
                     required
-                    className="p-2 bg-white border-red-100 rounded-xl text-xs"
+                    className="p-2 bg-background border-destructive/20 rounded-xl text-xs"
                   />
                 </FormField>
               </div>
-              <div className="pt-2 border-t border-red-100 mt-2">
-                <label className="flex items-center justify-between cursor-pointer group">
+              <div className="pt-2 border-t border-destructive/20 mt-2">
+                <div className="flex items-center justify-between">
                   <div className="flex flex-col">
-                    <span className="text-[11px] font-black text-red-500 uppercase">DSR 적용 제외 여부</span>
-                    <span className="text-[9px] text-red-300 font-bold leading-tight">전세자금대출 등 제외 시 체크</span>
+                    <Label className="text-[11px] font-black text-destructive uppercase cursor-pointer">DSR 적용 제외 여부</Label>
+                    <span className="text-[9px] text-destructive/60 font-bold leading-tight">전세자금대출 등 제외 시 체크</span>
                   </div>
-                  <input
-                    type="checkbox"
+                  <Checkbox
                     checked={isDsrExcluded}
-                    onChange={(e) => setIsDsrExcluded(e.target.checked)}
-                    className="w-5 h-5 rounded-md border-red-200 text-red-500"
+                    onCheckedChange={(checked) => setIsDsrExcluded(checked === true)}
+                    className="border-destructive/30 data-[state=checked]:bg-destructive data-[state=checked]:border-destructive"
                   />
-                </label>
+                </div>
               </div>
             </div>
           )}
@@ -492,12 +460,12 @@ const AssetForm: React.FC<Props> = ({ onSave, onClose, initialData }) => {
           )}
 
           <div className="pt-4 flex gap-4">
-            <button type="button" onClick={onClose} className="flex-1 py-3 px-4 bg-gray-100 text-gray-500 font-black rounded-2xl hover:bg-gray-200 transition-colors">취소</button>
-            <button type="submit" className="flex-1 py-3 px-4 bg-blue-600 text-white font-black rounded-2xl hover:bg-blue-700 shadow-lg shadow-blue-500/30 transition-colors">저장</button>
+            <Button type="button" onClick={onClose} variant="outline" className="flex-1 py-3 font-black rounded-2xl">취소</Button>
+            <Button type="submit" className="flex-1 py-3 font-black rounded-2xl shadow-lg shadow-primary/30">저장</Button>
           </div>
         </form>
-      </div>
-    </div>
+      </DialogContent>
+    </Dialog>
   );
 };
 

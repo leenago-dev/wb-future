@@ -1,4 +1,7 @@
 import React, { useState } from 'react';
+import { LayoutDashboard, Home, Clock, TrendingUp, Coins, ChevronRight, ChevronsLeft, X } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { cn } from '@/lib/utils';
 import { SIDEBAR_MENU_ITEMS } from '@/config/app';
 
 export type ViewType = 'dashboard' | 'real-estate' | 'pension' | 'stock' | 'crypto';
@@ -24,21 +27,11 @@ const Sidebar: React.FC<SidebarProps> = ({
 
   const getIcon = (id: ViewType) => {
     const iconMap: Record<ViewType, React.ReactNode> = {
-      'dashboard': (
-        <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"></path></svg>
-      ),
-      'real-estate': (
-        <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"></path></svg>
-      ),
-      'pension': (
-        <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
-      ),
-      'crypto': (
-        <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"></path></svg>
-      ),
-      'stock': (
-        <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path></svg>
-      ),
+      'dashboard': <LayoutDashboard className="w-6 h-6" />,
+      'real-estate': <Home className="w-6 h-6" />,
+      'pension': <Clock className="w-6 h-6" />,
+      'crypto': <TrendingUp className="w-6 h-6" />,
+      'stock': <Coins className="w-6 h-6" />,
     };
     return iconMap[id];
   };
@@ -70,24 +63,28 @@ const Sidebar: React.FC<SidebarProps> = ({
       >
         <div className="p-6 flex items-center justify-between overflow-hidden">
           {(!isCollapsed || isMobileOpen) && <h1 className="font-bold text-xl truncate tracking-tight">Wealth Dash</h1>}
-          <button
+          <Button
             onClick={() => setIsCollapsed(!isCollapsed)}
-            className="hidden lg:block p-1.5 hover:bg-slate-800 rounded-lg transition-colors ml-auto text-slate-400 hover:text-white"
+            variant="ghost"
+            size="icon"
+            className="hidden lg:flex ml-auto text-slate-400 hover:text-white hover:bg-slate-800"
           >
             {isCollapsed ? (
-              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 5l7 7-7 7M5 5l7 7-7 7"></path></svg>
+              <ChevronRight className="w-6 h-6" />
             ) : (
-              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M11 19l-7-7 7-7m8 14l-7-7 7-7"></path></svg>
+              <ChevronsLeft className="w-6 h-6" />
             )}
-          </button>
+          </Button>
 
           {/* Mobile Close Button */}
-          <button
+          <Button
             onClick={() => setIsMobileOpen(false)}
-            className="lg:hidden p-1.5 hover:bg-slate-800 rounded-lg transition-colors"
+            variant="ghost"
+            size="icon"
+            className="lg:hidden text-slate-400 hover:text-white hover:bg-slate-800"
           >
-            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"></path></svg>
-          </button>
+            <X className="w-6 h-6" />
+          </Button>
         </div>
 
         <nav className="flex-1 mt-4 px-3 space-y-2">
@@ -98,20 +95,26 @@ const Sidebar: React.FC<SidebarProps> = ({
               onMouseLeave={() => setHoveredItem(null)}
               className="relative"
             >
-              <button
+              <Button
                 onClick={() => handleMenuClick(item.id as ViewType)}
-                className={`w-full flex items-center gap-4 p-3 rounded-xl transition-all duration-200 group ${currentView === item.id
-                  ? 'bg-blue-600 text-white shadow-lg shadow-blue-900/20'
-                  : 'text-slate-400 hover:bg-slate-800 hover:text-white'
-                  }`}
+                variant="ghost"
+                className={cn(
+                  'w-full justify-start gap-4 p-3 rounded-xl transition-all duration-200 group h-auto',
+                  currentView === item.id
+                    ? 'bg-primary text-primary-foreground shadow-lg shadow-primary/20'
+                    : 'text-slate-400 hover:bg-slate-800 hover:text-white'
+                )}
               >
-                <div className={`flex-shrink-0 transition-transform duration-200 ${currentView === item.id ? 'scale-110' : 'group-hover:scale-110'}`}>
+                <div className={cn(
+                  'flex-shrink-0 transition-transform duration-200',
+                  currentView === item.id ? 'scale-110' : 'group-hover:scale-110'
+                )}>
                   {item.icon}
                 </div>
                 {(!isCollapsed || isMobileOpen) && (
                   <span className="font-medium whitespace-nowrap text-sm">{item.label}</span>
                 )}
-              </button>
+              </Button>
 
               {/* Tooltip for collapsed state (Desktop only) */}
               {isCollapsed && hoveredItem === item.id && !isMobileOpen && (

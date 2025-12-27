@@ -1,7 +1,11 @@
 'use client';
 
 import { useState } from 'react';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import { Button } from '@/components/ui/button';
 import { quoteCache } from '@/services/quoteCache';
+import { cn } from '@/lib/utils';
 
 interface StockData {
   symbol: string;
@@ -48,52 +52,55 @@ export default function StockCard() {
   };
 
   return (
-    <div className="bg-white p-6 rounded-3xl border shadow-sm">
-      <h2 className="text-base font-black text-gray-800 mb-4 flex items-center gap-2">
-        📈 주식 조회하기
-      </h2>
-
-      <div className="flex gap-2 mb-4">
-        <input
-          type="text"
-          placeholder="예: AAPL, TSLA"
-          value={ticker}
-          onChange={(e) => setTicker(e.target.value.toUpperCase())}
-          onKeyPress={handleKeyPress}
-          className="border border-gray-200 p-2.5 rounded-xl w-full text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-        />
-        <button
-          onClick={fetchStockPrice}
-          disabled={loading || !ticker}
-          className="bg-blue-600 text-white px-4 py-2.5 rounded-xl font-bold text-sm hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors active:scale-95"
-        >
-          {loading ? '...' : '조회'}
-        </button>
-      </div>
-
-      {error && (
-        <div className="p-3 bg-red-50 border border-red-200 rounded-xl">
-          <p className="text-red-600 text-sm font-medium">{error}</p>
+    <Card className="p-6 rounded-3xl">
+      <CardHeader className="p-0 mb-4">
+        <CardTitle className="text-base font-black flex items-center gap-2">
+          📈 주식 조회하기
+        </CardTitle>
+      </CardHeader>
+      <CardContent className="p-0">
+        <div className="flex gap-2 mb-4">
+          <Input
+            type="text"
+            placeholder="예: AAPL, TSLA"
+            value={ticker}
+            onChange={(e) => setTicker(e.target.value.toUpperCase())}
+            onKeyPress={handleKeyPress}
+            className="rounded-xl font-bold"
+          />
+          <Button
+            onClick={fetchStockPrice}
+            disabled={loading || !ticker}
+            className="font-bold text-sm rounded-xl"
+          >
+            {loading ? '...' : '조회'}
+          </Button>
         </div>
-      )}
 
-      {stockData && (
-        <div className="mt-4 p-4 bg-gradient-to-br from-gray-50 to-gray-100 border border-gray-200 rounded-xl">
-          <p className="text-sm text-gray-600 mb-2 font-medium">{stockData.name}</p>
-          <div className="flex items-baseline gap-2 mb-2">
-            <span className="text-3xl font-black text-gray-900">
-              {stockData.price.toLocaleString('ko-KR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-            </span>
-            <span className="text-sm text-gray-600 font-medium">{stockData.currency}</span>
+        {error && (
+          <div className="p-3 bg-destructive/10 border border-destructive/20 rounded-xl">
+            <p className="text-destructive text-sm font-medium">{error}</p>
           </div>
-          <div className="flex items-center gap-2">
-            <p className={`text-sm font-bold ${stockData.changePercent >= 0 ? 'text-red-600' : 'text-blue-600'}`}>
-              {stockData.changePercent >= 0 ? '▲' : '▼'} {Math.abs(stockData.changePercent).toFixed(2)}%
-            </p>
-            <span className="text-xs text-gray-500">({stockData.symbol})</span>
+        )}
+
+        {stockData && (
+          <div className="mt-4 p-4 bg-gradient-to-br from-muted to-muted/50 border rounded-xl">
+            <p className="text-sm text-muted-foreground mb-2 font-medium">{stockData.name}</p>
+            <div className="flex items-baseline gap-2 mb-2">
+              <span className="text-3xl font-black text-foreground">
+                {stockData.price.toLocaleString('ko-KR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+              </span>
+              <span className="text-sm text-muted-foreground font-medium">{stockData.currency}</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <p className={cn('text-sm font-bold', stockData.changePercent >= 0 ? 'text-destructive' : 'text-primary')}>
+                {stockData.changePercent >= 0 ? '▲' : '▼'} {Math.abs(stockData.changePercent).toFixed(2)}%
+              </p>
+              <span className="text-xs text-muted-foreground">({stockData.symbol})</span>
+            </div>
           </div>
-        </div>
-      )}
-    </div>
+        )}
+      </CardContent>
+    </Card>
   );
 }

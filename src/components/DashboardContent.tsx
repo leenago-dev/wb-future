@@ -1,10 +1,16 @@
 'use client';
 
 import { useState } from 'react';
+import { Menu, Plus } from 'lucide-react';
 import { Asset, AssetOwner } from '@/types';
 import { ViewType, useAssets } from '@/hooks/useAssets';
 import { useAiAdvice } from '@/hooks/useAiAdvice';
 import { useSidebar } from '@/components/SidebarContext';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Badge } from '@/components/ui/badge';
+import { cn } from '@/lib/utils';
 import AssetForm from '@/components/AssetForm';
 import AssetList from '@/components/AssetList';
 import Charts from '@/components/Charts';
@@ -36,37 +42,39 @@ export default function DashboardContent({ currentView, title }: DashboardConten
 
   return (
     <>
-      <header className="bg-white/80 backdrop-blur-md border-b sticky top-0 z-40">
+      <header className="bg-background/80 backdrop-blur-md border-b sticky top-0 z-40">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <button onClick={() => setIsMobileOpen(true)} className="lg:hidden p-2 -ml-2 text-gray-500 hover:text-gray-900 transition-colors">
-              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 6h16M4 12h16M4 18h16"></path></svg>
-            </button>
-            <h1 className="text-lg sm:text-xl font-bold text-gray-900 tracking-tight">{title}</h1>
+            <Button onClick={() => setIsMobileOpen(true)} variant="ghost" size="icon" className="lg:hidden -ml-2">
+              <Menu className="w-6 h-6" />
+            </Button>
+            <h1 className="text-lg sm:text-xl font-bold text-foreground tracking-tight">{title}</h1>
           </div>
           <div className="flex items-center gap-3">
-            {isLoadingPrices && <span className="hidden md:inline text-[10px] text-blue-500 animate-pulse font-black tracking-tighter uppercase">Live Markets</span>}
-            <button
+            {isLoadingPrices && <Badge variant="outline" className="hidden md:inline text-[10px] text-primary animate-pulse font-black tracking-tighter uppercase">Live Markets</Badge>}
+            <Button
               onClick={() => { setEditingAsset(undefined); setIsFormOpen(true); }}
-              className="bg-blue-600 text-white px-3 sm:px-4 py-1.5 sm:py-2 rounded-xl font-bold text-xs sm:text-sm hover:bg-blue-700 transition-all shadow-lg shadow-blue-500/20 active:scale-95"
+              className="font-bold text-xs sm:text-sm shadow-lg shadow-primary/20"
             >
-              + 항목 추가
-            </button>
+              <Plus className="w-4 h-4 mr-1" />
+              항목 추가
+            </Button>
           </div>
         </div>
       </header>
 
       <main className="max-w-6xl mx-auto px-4 sm:px-6 py-6 space-y-6">
         <div className="overflow-x-auto -mx-4 px-4 sm:mx-0 sm:px-0 scrollbar-hide">
-          <div className="flex bg-white p-1 rounded-2xl border shadow-sm w-max sm:w-fit">
+          <div className="flex bg-card p-1 rounded-2xl border shadow-sm w-max sm:w-fit">
             {OWNER_FILTER_OPTIONS.map((owner) => (
-              <button
+              <Button
                 key={owner}
                 onClick={() => setSelectedOwner(owner as 'Total' | AssetOwner)}
-                className={`px-4 sm:px-6 py-1.5 sm:py-2 rounded-xl text-xs sm:text-sm font-bold transition-all ${selectedOwner === owner ? 'bg-blue-600 text-white shadow-md' : 'text-gray-500 hover:text-gray-800'}`}
+                variant={selectedOwner === owner ? 'default' : 'ghost'}
+                className={cn('px-4 sm:px-6 py-1.5 sm:py-2 rounded-xl text-xs sm:text-sm font-bold', selectedOwner === owner && 'shadow-md')}
               >
                 {OWNER_LABELS[owner]}
-              </button>
+              </Button>
             ))}
           </div>
         </div>
@@ -76,58 +84,83 @@ export default function DashboardContent({ currentView, title }: DashboardConten
         )}
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
-          <div className="bg-white p-5 sm:p-6 rounded-3xl border shadow-sm flex flex-col justify-between hover:border-blue-100 transition-colors group">
-            <span className="text-xs sm:text-sm text-gray-400 font-bold uppercase tracking-wider">Total Assets</span>
-            <span className="text-xl sm:text-2xl font-black text-gray-900 mt-2">{formatCurrency(stats.totalAssets)}</span>
-          </div>
+          <Card className="p-5 sm:p-6 rounded-3xl hover:border-primary/50 transition-colors">
+            <CardContent className="p-0 flex flex-col justify-between">
+              <span className="text-xs sm:text-sm text-muted-foreground font-bold uppercase tracking-wider">Total Assets</span>
+              <span className="text-xl sm:text-2xl font-black text-foreground mt-2">{formatCurrency(stats.totalAssets)}</span>
+            </CardContent>
+          </Card>
 
           {currentView === 'pension' ? (
-            <div className="bg-white p-5 sm:p-6 rounded-3xl border shadow-sm flex flex-col justify-between hover:border-emerald-100 transition-colors group">
-              <div className="flex justify-between items-start">
-                <span className="text-xs sm:text-sm text-gray-400 font-bold uppercase tracking-wider">Performance</span>
-                <span className={`text-[10px] font-black px-2 py-0.5 rounded-full ${stats.totalProfit >= 0 ? 'bg-emerald-50 text-emerald-600' : 'bg-rose-50 text-rose-600'}`}>
-                  {stats.totalRoi >= 0 ? '+' : ''}{stats.totalRoi.toFixed(2)}%
+            <Card className="p-5 sm:p-6 rounded-3xl hover:border-emerald-100 transition-colors">
+              <CardContent className="p-0 flex flex-col justify-between">
+                <div className="flex justify-between items-start">
+                  <span className="text-xs sm:text-sm text-muted-foreground font-bold uppercase tracking-wider">Performance</span>
+                  <Badge variant={stats.totalProfit >= 0 ? 'default' : 'destructive'} className="text-[10px] font-black">
+                    {stats.totalRoi >= 0 ? '+' : ''}{stats.totalRoi.toFixed(2)}%
+                  </Badge>
+                </div>
+                <span className={cn('text-xl sm:text-2xl font-black mt-2', stats.totalProfit >= 0 ? 'text-emerald-600' : 'text-rose-600')}>
+                  {stats.totalProfit >= 0 ? '+' : ''}{formatCurrency(stats.totalProfit)}
                 </span>
-              </div>
-              <span className={`text-xl sm:text-2xl font-black mt-2 ${stats.totalProfit >= 0 ? 'text-emerald-600' : 'text-rose-600'}`}>
-                {stats.totalProfit >= 0 ? '+' : ''}{formatCurrency(stats.totalProfit)}
-              </span>
-            </div>
+              </CardContent>
+            </Card>
           ) : (
-            <div className="bg-white p-5 sm:p-6 rounded-3xl border shadow-sm flex flex-col justify-between hover:border-red-100 transition-colors group">
-              <span className="text-xs sm:text-sm text-gray-400 font-bold uppercase tracking-wider">Liabilities</span>
-              <span className="text-xl sm:text-2xl font-black text-red-600 mt-2">{formatCurrency(stats.totalLiabilities)}</span>
-            </div>
+            <Card className="p-5 sm:p-6 rounded-3xl hover:border-red-100 transition-colors">
+              <CardContent className="p-0 flex flex-col justify-between">
+                <span className="text-xs sm:text-sm text-muted-foreground font-bold uppercase tracking-wider">Liabilities</span>
+                <span className="text-xl sm:text-2xl font-black text-destructive mt-2">{formatCurrency(stats.totalLiabilities)}</span>
+              </CardContent>
+            </Card>
           )}
 
-          <div className="bg-gradient-to-br from-blue-600 to-indigo-700 p-5 sm:p-6 rounded-3xl shadow-xl flex flex-col justify-between text-white transform transition-transform hover:scale-[1.01] sm:col-span-2 lg:col-span-1">
-            <span className="text-xs sm:text-sm text-blue-100 font-bold uppercase tracking-wider">Net Worth</span>
-            <span className="text-xl sm:text-2xl font-black mt-2">{formatCurrency(stats.netWorth)}</span>
-          </div>
+          <Card className="bg-gradient-to-br from-primary to-indigo-700 p-5 sm:p-6 rounded-3xl shadow-xl text-primary-foreground transform transition-transform hover:scale-[1.01] sm:col-span-2 lg:col-span-1 border-0">
+            <CardContent className="p-0 flex flex-col justify-between">
+              <span className="text-xs sm:text-sm text-primary-foreground/80 font-bold uppercase tracking-wider">Net Worth</span>
+              <span className="text-xl sm:text-2xl font-black mt-2">{formatCurrency(stats.netWorth)}</span>
+            </CardContent>
+          </Card>
         </div>
 
-        <div className="flex items-center gap-6 border-b border-gray-100 overflow-x-auto">
-          <button onClick={() => setViewMode('Assets')} className={`pb-3 px-1 text-sm font-black transition-all relative ${viewMode === 'Assets' ? 'text-blue-600' : 'text-gray-400'}`}>
-            자산 목록 {viewMode === 'Assets' && <div className="absolute bottom-0 left-0 w-full h-1 bg-blue-600 rounded-full" />}
-          </button>
-          <button onClick={() => setViewMode('History')} className={`pb-3 px-1 text-sm font-black transition-all relative ${viewMode === 'History' ? 'text-blue-600' : 'text-gray-400'}`}>
-            변동 추이 {viewMode === 'History' && <div className="absolute bottom-0 left-0 w-full h-1 bg-blue-600 rounded-full" />}
-          </button>
-        </div>
+        <Tabs value={viewMode} onValueChange={(value) => setViewMode(value as 'Assets' | 'History')} className="w-full">
+          <TabsList className="w-full justify-start border-b rounded-none bg-transparent h-auto p-0">
+            <TabsTrigger value="Assets" className="pb-3 px-1 text-sm font-black data-[state=active]:text-primary data-[state=active]:shadow-none rounded-none border-b-2 border-transparent data-[state=active]:border-primary">
+              자산 목록
+            </TabsTrigger>
+            <TabsTrigger value="History" className="pb-3 px-1 text-sm font-black data-[state=active]:text-primary data-[state=active]:shadow-none rounded-none border-b-2 border-transparent data-[state=active]:border-primary">
+              변동 추이
+            </TabsTrigger>
+          </TabsList>
+        </Tabs>
+
+        <Tabs value={viewMode} onValueChange={(value) => setViewMode(value as 'Assets' | 'History')} className="w-full">
+          <TabsList className="hidden">
+            <TabsTrigger value="Assets" />
+            <TabsTrigger value="History" />
+          </TabsList>
+        </Tabs>
 
         {viewMode === 'Assets' ? (
           <div className="space-y-6">
             {(currentView === 'pension' || currentView === 'stock') && (
               <>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div className="bg-white p-6 rounded-3xl border shadow-sm">
-                    <h2 className="text-base font-black text-gray-800 mb-6 flex items-center gap-2">🌍 국가별 투자 비중</h2>
-                    <Charts assets={filteredAssets} groupBy="country" />
-                  </div>
-                  <div className="bg-white p-6 rounded-3xl border shadow-sm">
-                    <h2 className="text-base font-black text-gray-800 mb-6 flex items-center gap-2">📦 종목별 투자 비중</h2>
-                    <Charts assets={filteredAssets} groupBy="name" />
-                  </div>
+                  <Card className="p-6 rounded-3xl">
+                    <CardHeader className="p-0 mb-6">
+                      <CardTitle className="text-base font-black flex items-center gap-2">🌍 국가별 투자 비중</CardTitle>
+                    </CardHeader>
+                    <CardContent className="p-0">
+                      <Charts assets={filteredAssets} groupBy="country" />
+                    </CardContent>
+                  </Card>
+                  <Card className="p-6 rounded-3xl">
+                    <CardHeader className="p-0 mb-6">
+                      <CardTitle className="text-base font-black flex items-center gap-2">📦 종목별 투자 비중</CardTitle>
+                    </CardHeader>
+                    <CardContent className="p-0">
+                      <Charts assets={filteredAssets} groupBy="name" />
+                    </CardContent>
+                  </Card>
                 </div>
                 <StockCard />
               </>
@@ -140,56 +173,86 @@ export default function DashboardContent({ currentView, title }: DashboardConten
 
               <div className="space-y-6">
                 {currentView !== 'pension' && (
-                  <div className="bg-white p-6 rounded-3xl border shadow-sm">
-                    <h2 className="text-base font-black text-gray-800 mb-6">Asset Allocation</h2>
-                    <Charts assets={filteredAssets} />
-                  </div>
+                  <Card className="p-6 rounded-3xl">
+                    <CardHeader className="p-0 mb-6">
+                      <CardTitle className="text-base font-black">Asset Allocation</CardTitle>
+                    </CardHeader>
+                    <CardContent className="p-0">
+                      <Charts assets={filteredAssets} />
+                    </CardContent>
+                  </Card>
                 )}
 
-                <div className="bg-indigo-900 p-6 rounded-3xl shadow-xl relative overflow-hidden group">
+                <Card className="bg-indigo-900 p-6 rounded-3xl shadow-xl relative overflow-hidden group border-0">
                   {/* 배경 장식 아이콘 (AI 스파크 아이콘) */}
                   <div className="absolute top-0 right-0 p-4 opacity-10 pointer-events-none">
                     <svg className="w-24 h-24 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
                     </svg>
                   </div>
-                  <div className="flex items-center justify-between mb-4 relative z-10">
-                    <h2 className="text-base font-black text-white flex items-center gap-2">✨ Wealth AI</h2>
-                    <button onClick={() => getAiAdvice(filteredAssets, stats, selectedOwner, currentView)} disabled={isAiThinking || filteredAssets.length === 0} className="text-[10px] font-black bg-white text-indigo-900 px-3 py-1.5 rounded-full hover:bg-indigo-50 active:scale-95 disabled:bg-gray-400">
-                      {isAiThinking ? '분석 중...' : '진단 받기'}
-                    </button>
-                  </div>
-                  <div className="text-sm text-indigo-100 leading-relaxed italic relative z-10 bg-white/10 p-4 rounded-2xl backdrop-blur-md border border-white/10 min-h-[120px] flex items-center">
-                    {aiAdvice || "현재 구성을 기반으로 개인화된 재무 분석과 대출 조언을 제공합니다."}
-                  </div>
-                </div>
+                  <CardHeader className="p-0 mb-4 relative z-10">
+                    <div className="flex items-center justify-between">
+                      <CardTitle className="text-base font-black text-white flex items-center gap-2">✨ Wealth AI</CardTitle>
+                      <Button
+                        onClick={() => getAiAdvice(filteredAssets, stats, selectedOwner, currentView)}
+                        disabled={isAiThinking || filteredAssets.length === 0}
+                        variant="secondary"
+                        size="sm"
+                        className="text-[10px] font-black"
+                      >
+                        {isAiThinking ? '분석 중...' : '진단 받기'}
+                      </Button>
+                    </div>
+                  </CardHeader>
+                  <CardContent className="p-0 relative z-10">
+                    <div className="text-sm text-primary-foreground/80 leading-relaxed italic bg-background/10 p-4 rounded-2xl backdrop-blur-md border border-background/10 min-h-[120px] flex items-center">
+                      {aiAdvice || "현재 구성을 기반으로 개인화된 재무 분석과 대출 조언을 제공합니다."}
+                    </div>
+                  </CardContent>
+                </Card>
               </div>
             </div>
           </div>
         ) : (
           <div className="space-y-6">
             <div className={`grid grid-cols-1 ${(currentView === 'pension' || currentView === 'stock') ? 'lg:grid-cols-2' : ''} gap-6`}>
-              <div className="bg-white p-6 sm:p-8 rounded-3xl border shadow-sm">
-                <h3 className="text-sm font-black text-gray-400 uppercase tracking-widest mb-4">순자산/총자산 추이</h3>
-                <HistoryChart data={historyData} />
-              </div>
+              <Card className="p-6 sm:p-8 rounded-3xl">
+                <CardHeader className="p-0 mb-4">
+                  <CardTitle className="text-sm font-black text-muted-foreground uppercase tracking-widest">순자산/총자산 추이</CardTitle>
+                </CardHeader>
+                <CardContent className="p-0">
+                  <HistoryChart data={historyData} />
+                </CardContent>
+              </Card>
               {(currentView === 'pension' || currentView === 'stock') && (
-                <div className="bg-white p-6 sm:p-8 rounded-3xl border shadow-sm">
-                  <h3 className="text-sm font-black text-gray-400 uppercase tracking-widest mb-4">수익금/수익률 추이</h3>
-                  <ProfitHistoryChart data={historyData} />
-                </div>
+                <Card className="p-6 sm:p-8 rounded-3xl">
+                  <CardHeader className="p-0 mb-4">
+                    <CardTitle className="text-sm font-black text-muted-foreground uppercase tracking-widest">수익금/수익률 추이</CardTitle>
+                  </CardHeader>
+                  <CardContent className="p-0">
+                    <ProfitHistoryChart data={historyData} />
+                  </CardContent>
+                </Card>
               )}
             </div>
             {currentView !== 'pension' && (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div className="bg-white p-6 rounded-3xl border shadow-sm">
-                  <h3 className="text-sm font-black text-gray-400 uppercase tracking-widest mb-2">Assets Flow</h3>
-                  <AssetLiabilityBarChart data={historyData} type="assets" />
-                </div>
-                <div className="bg-white p-6 rounded-3xl border shadow-sm">
-                  <h3 className="text-sm font-black text-gray-400 uppercase tracking-widest mb-2">Liabilities Flow</h3>
-                  <AssetLiabilityBarChart data={historyData} type="liabilities" />
-                </div>
+                <Card className="p-6 rounded-3xl">
+                  <CardHeader className="p-0 mb-2">
+                    <CardTitle className="text-sm font-black text-muted-foreground uppercase tracking-widest">Assets Flow</CardTitle>
+                  </CardHeader>
+                  <CardContent className="p-0">
+                    <AssetLiabilityBarChart data={historyData} type="assets" />
+                  </CardContent>
+                </Card>
+                <Card className="p-6 rounded-3xl">
+                  <CardHeader className="p-0 mb-2">
+                    <CardTitle className="text-sm font-black text-muted-foreground uppercase tracking-widest">Liabilities Flow</CardTitle>
+                  </CardHeader>
+                  <CardContent className="p-0">
+                    <AssetLiabilityBarChart data={historyData} type="liabilities" />
+                  </CardContent>
+                </Card>
               </div>
             )}
           </div>
@@ -197,7 +260,13 @@ export default function DashboardContent({ currentView, title }: DashboardConten
       </main>
 
       {isFormOpen && <AssetForm onSave={(data) => { handleSave(data, editingAsset); setIsFormOpen(false); setEditingAsset(undefined); }} onClose={() => { setIsFormOpen(false); setEditingAsset(undefined); }} initialData={editingAsset} />}
-      <button onClick={() => { setEditingAsset(undefined); setIsFormOpen(true); }} className="fixed bottom-6 right-6 lg:hidden w-14 h-14 bg-blue-600 text-white rounded-full shadow-2xl flex items-center justify-center text-3xl hover:bg-blue-700 active:scale-90 transition-transform z-30 ring-4 ring-white">+</button>
+      <Button
+        onClick={() => { setEditingAsset(undefined); setIsFormOpen(true); }}
+        size="icon"
+        className="fixed bottom-6 right-6 lg:hidden w-14 h-14 rounded-full shadow-2xl text-3xl z-30 ring-4 ring-white"
+      >
+        <Plus className="w-6 h-6" />
+      </Button>
     </>
   );
 }

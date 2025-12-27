@@ -35,7 +35,7 @@ function SidebarLayout({ children }: { children: React.ReactNode }) {
   };
 
   return (
-    <div className="flex min-h-screen bg-gray-50/50">
+    <div className="flex min-h-screen bg-muted/50">
       <Sidebar
         currentView={getCurrentView()}
         onViewChange={handleViewChange}

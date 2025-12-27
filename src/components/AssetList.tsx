@@ -1,8 +1,13 @@
 'use client';
 
 import React from 'react';
+import { Plus } from 'lucide-react';
 import { Asset, AssetCategory } from '@/types';
 import { EXCHANGE_RATE } from '@/config/app';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { cn } from '@/lib/utils';
 
 interface Props {
   assets: Asset[];
@@ -73,21 +78,23 @@ const AssetList: React.FC<Props> = ({ assets, onEdit, onDelete, exchangeRate = E
   return (
     <div className="space-y-8">
       {(Object.entries(groupedAssets) as [string, Asset[]][]).map(([cat, items]) => (
-        <div key={cat} className="bg-white rounded-3xl shadow-sm border border-gray-100 overflow-hidden">
-          <div className="px-6 py-4 bg-gray-50/50 border-b border-gray-100 flex justify-between items-center">
-            <h3 className="font-black text-gray-700 flex items-center gap-3">
-              <span className="text-xl">{getCategoryIcon(cat as AssetCategory)}</span>
-              <span className="tracking-tight uppercase text-xs">
-                {cat === 'VIRTUAL_ASSET' ? '가상자산' :
-                  cat === 'REAL_ESTATE' ? '부동산' :
-                    cat === 'PENSION' ? '퇴직연금' :
-                      cat === 'STOCK' ? '주식/ETF' :
-                        cat === 'LOAN' ? '대출 및 부채' : '현금성 자산'}
-              </span>
-            </h3>
-            <span className="bg-white px-3 py-1 rounded-full text-[10px] font-black text-gray-400 border border-gray-100 uppercase">{items.length} items</span>
-          </div>
-          <div className="divide-y divide-gray-50">
+        <Card key={cat} className="rounded-3xl overflow-hidden">
+          <CardHeader className="px-6 py-4 bg-muted/50 border-b">
+            <div className="flex justify-between items-center">
+              <CardTitle className="font-black flex items-center gap-3">
+                <span className="text-xl">{getCategoryIcon(cat as AssetCategory)}</span>
+                <span className="tracking-tight uppercase text-xs">
+                  {cat === 'VIRTUAL_ASSET' ? '가상자산' :
+                    cat === 'REAL_ESTATE' ? '부동산' :
+                      cat === 'PENSION' ? '퇴직연금' :
+                        cat === 'STOCK' ? '주식/ETF' :
+                          cat === 'LOAN' ? '대출 및 부채' : '현금성 자산'}
+                </span>
+              </CardTitle>
+              <Badge variant="outline" className="text-[10px] font-black uppercase">{items.length} items</Badge>
+            </div>
+          </CardHeader>
+          <CardContent className="p-0 divide-y">
             {items.map(asset => {
               const profit = getProfit(asset);
               const isLoan = asset.category === AssetCategory.LOAN;
@@ -95,27 +102,27 @@ const AssetList: React.FC<Props> = ({ assets, onEdit, onDelete, exchangeRate = E
               const dsrExcluded = asset.metadata.is_dsr_excluded;
 
               return (
-                <div key={asset.id} className="p-5 hover:bg-gray-50 transition-all flex flex-col sm:flex-row sm:items-center justify-between group gap-4">
+                <div key={asset.id} className="p-5 hover:bg-muted/50 transition-all flex flex-col sm:flex-row sm:items-center justify-between group gap-4">
                   <div className="flex-1">
-                    <div className="flex items-center gap-2 mb-1">
-                      <p className="font-black text-gray-900">{asset.name}</p>
-                      <span className="text-[10px] px-2 py-0.5 bg-slate-100 text-slate-500 rounded-full uppercase font-black">{asset.owner}</span>
+                    <div className="flex items-center gap-2 mb-1 flex-wrap">
+                      <p className="font-black text-foreground">{asset.name}</p>
+                      <Badge variant="secondary" className="text-[10px] uppercase font-black">{asset.owner}</Badge>
                       {asset.metadata.country && (
-                        <span className="text-[10px] px-2 py-0.5 bg-blue-50 text-blue-600 rounded-full font-black">📍 {asset.metadata.country}</span>
+                        <Badge variant="outline" className="text-[10px] font-black">📍 {asset.metadata.country}</Badge>
                       )}
                       {isLoan && (
-                        <span className={`text-[9px] px-2 py-0.5 rounded-full font-black uppercase ${dsrExcluded ? 'bg-gray-100 text-gray-400' : 'bg-red-50 text-red-500 border border-red-100'}`}>
+                        <Badge variant={dsrExcluded ? 'secondary' : 'destructive'} className="text-[9px] uppercase font-black">
                           {dsrExcluded ? 'DSR 제외' : 'DSR 포함'}
-                        </span>
+                        </Badge>
                       )}
                     </div>
-                    <div className="flex flex-wrap items-center gap-3 text-[11px] text-gray-400 font-bold">
-                      {asset.metadata.ticker && <span className="px-2 py-0.5 bg-blue-50 text-blue-600 rounded-md font-mono uppercase tracking-tighter">{asset.metadata.ticker}</span>}
+                    <div className="flex flex-wrap items-center gap-3 text-[11px] text-muted-foreground font-bold">
+                      {asset.metadata.ticker && <Badge variant="outline" className="px-2 py-0.5 font-mono uppercase tracking-tighter">{asset.metadata.ticker}</Badge>}
                       {asset.category === AssetCategory.REAL_ESTATE && <span className="truncate max-w-[200px]">{asset.metadata.address}</span>}
                       {isLoan && (
-                        <div className="flex items-center gap-2 text-red-400/70">
-                          <span className="bg-red-50/50 px-2 py-0.5 rounded-md">{asset.metadata.loan_type}</span>
-                          <span className="bg-red-50/50 px-2 py-0.5 rounded-md">{asset.metadata.interest_rate}% ({asset.metadata.repayment_type})</span>
+                        <div className="flex items-center gap-2 text-destructive/70">
+                          <Badge variant="outline" className="bg-destructive/10 border-destructive/20 text-destructive px-2 py-0.5">{asset.metadata.loan_type}</Badge>
+                          <Badge variant="outline" className="bg-destructive/10 border-destructive/20 text-destructive px-2 py-0.5">{asset.metadata.interest_rate}% ({asset.metadata.repayment_type})</Badge>
                         </div>
                       )}
                       {!isLoan && <span>{asset.category === AssetCategory.CASH ? '자산 총액' : `${asset.amount.toLocaleString()} Units`}</span>}
@@ -130,7 +137,7 @@ const AssetList: React.FC<Props> = ({ assets, onEdit, onDelete, exchangeRate = E
                         const krwValue = isUsdAsset ? value * exchangeRate : value;
 
                         return (
-                          <p className={`font-black ${isLoan ? 'text-red-600' : 'text-gray-900'} text-lg leading-tight tracking-tight`}>
+                          <p className={cn('font-black text-lg leading-tight tracking-tight', isLoan ? 'text-destructive' : 'text-foreground')}>
                             {isUsdAsset && usdValue !== undefined ? (
                               <>
                                 {formatCurrency(usdValue, 'USD')} | {formatCurrency(krwValue, 'KRW')}
@@ -142,7 +149,7 @@ const AssetList: React.FC<Props> = ({ assets, onEdit, onDelete, exchangeRate = E
                         );
                       })()}
                       {isLoan && (
-                        <p className="text-[11px] font-black text-red-400/80 mt-1">
+                        <p className="text-[11px] font-black text-destructive/80 mt-1">
                           월 예상 납입: {formatCurrency(monthlyPay)}
                         </p>
                       )}
@@ -155,7 +162,7 @@ const AssetList: React.FC<Props> = ({ assets, onEdit, onDelete, exchangeRate = E
                         const krwProfitAmount = isUsdAsset ? profitAmount * exchangeRate : profitAmount;
 
                         return (
-                          <p className={`text-[11px] font-black mt-1 ${profit > 0 ? 'text-red-500' : 'text-blue-500'}`}>
+                          <p className={cn('text-[11px] font-black mt-1', profit > 0 ? 'text-destructive' : 'text-primary')}>
                             {profit > 0 ? '▲' : '▼'} {Math.abs(profit).toFixed(2)}%
                             {isUsdAsset && usdProfitAmount !== undefined ? (
                               <> ({formatCurrency(usdProfitAmount, 'USD')} | {formatCurrency(krwProfitAmount, 'KRW')})</>
@@ -167,23 +174,25 @@ const AssetList: React.FC<Props> = ({ assets, onEdit, onDelete, exchangeRate = E
                       })()}
                     </div>
                     <div className="flex gap-3 items-center opacity-0 group-hover:opacity-100 transition-opacity">
-                      <button onClick={() => onEdit(asset)} className="text-blue-500 hover:text-blue-700 text-[10px] font-black uppercase tracking-widest">Edit</button>
-                      <button onClick={() => onDelete(asset.id)} className="text-red-400 hover:text-red-600 text-[10px] font-black uppercase tracking-widest">Del</button>
+                      <Button onClick={() => onEdit(asset)} variant="ghost" size="sm" className="text-[10px] font-black uppercase tracking-widest h-auto py-1 px-2">Edit</Button>
+                      <Button onClick={() => onDelete(asset.id)} variant="ghost" size="sm" className="text-[10px] font-black uppercase tracking-widest h-auto py-1 px-2 text-destructive hover:text-destructive">Del</Button>
                     </div>
                   </div>
                 </div>
               );
             })}
-          </div>
-        </div>
+          </CardContent>
+        </Card>
       ))}
       {assets.length === 0 && (
-        <div className="bg-white rounded-3xl border-2 border-dashed border-gray-100 p-20 text-center flex flex-col items-center">
-          <div className="w-16 h-16 bg-gray-50 rounded-full flex items-center justify-center mb-4">
-            <svg className="w-8 h-8 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path></svg>
-          </div>
-          <p className="text-gray-400 font-black tracking-tight">자산 정보를 입력하고 관리를 시작하세요.</p>
-        </div>
+        <Card className="rounded-3xl border-2 border-dashed p-20">
+          <CardContent className="text-center flex flex-col items-center p-0">
+            <div className="w-16 h-16 bg-muted rounded-full flex items-center justify-center mb-4">
+              <Plus className="w-8 h-8 text-muted-foreground" />
+            </div>
+            <p className="text-muted-foreground font-black tracking-tight">자산 정보를 입력하고 관리를 시작하세요.</p>
+          </CardContent>
+        </Card>
       )}
     </div>
   );
