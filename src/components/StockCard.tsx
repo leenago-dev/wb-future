@@ -54,7 +54,7 @@ export default function StockCard() {
   return (
     <Card className="p-6 rounded-3xl">
       <CardHeader className="p-0 mb-4">
-        <CardTitle className="text-base font-black flex items-center gap-2">
+        <CardTitle className="flex items-center gap-2">
           📈 주식 조회하기
         </CardTitle>
       </CardHeader>

@@ -48,13 +48,13 @@ export default function DashboardContent({ currentView, title }: DashboardConten
             <Button onClick={() => setIsMobileOpen(true)} variant="ghost" size="icon" className="lg:hidden -ml-2">
               <Menu className="w-6 h-6" />
             </Button>
-            <h1 className="text-lg sm:text-xl font-bold text-foreground tracking-tight">{title}</h1>
+            <h1 className="text-lg sm:text-xl text-foreground tracking-tight">{title}</h1>
           </div>
           <div className="flex items-center gap-3">
-            {isLoadingPrices && <Badge variant="outline" className="hidden md:inline text-[10px] text-primary animate-pulse font-black tracking-tighter uppercase">Live Markets</Badge>}
+            {isLoadingPrices && <Badge variant="outline" className="hidden md:inline text-[10px] text-primary animate-pulse tracking-tighter uppercase">Live Markets</Badge>}
             <Button
               onClick={() => { setEditingAsset(undefined); setIsFormOpen(true); }}
-              className="font-bold text-xs sm:text-sm shadow-lg shadow-primary/20"
+              className="text-xs sm:text-sm shadow-lg shadow-primary/20"
             >
               <Plus className="w-4 h-4 mr-1" />
               항목 추가
@@ -71,7 +71,7 @@ export default function DashboardContent({ currentView, title }: DashboardConten
                 key={owner}
                 onClick={() => setSelectedOwner(owner as 'Total' | AssetOwner)}
                 variant={selectedOwner === owner ? 'default' : 'ghost'}
-                className={cn('px-4 sm:px-6 py-1.5 sm:py-2 rounded-xl text-xs sm:text-sm font-bold', selectedOwner === owner && 'shadow-md')}
+                className={cn('px-4 sm:px-6 py-1.5 sm:py-2 rounded-xl', selectedOwner === owner && 'shadow-md')}
               >
                 {OWNER_LABELS[owner]}
               </Button>
@@ -96,7 +96,7 @@ export default function DashboardContent({ currentView, title }: DashboardConten
               <CardContent className="p-0 flex flex-col justify-between">
                 <div className="flex justify-between items-start">
                   <span className="text-xs sm:text-sm text-muted-foreground font-bold uppercase tracking-wider">Performance</span>
-                  <Badge variant={stats.totalProfit >= 0 ? 'default' : 'destructive'} className="text-[10px] font-black">
+                  <Badge variant={stats.totalProfit >= 0 ? 'default' : 'destructive'} className="text-[10px]">
                     {stats.totalRoi >= 0 ? '+' : ''}{stats.totalRoi.toFixed(2)}%
                   </Badge>
                 </div>
@@ -124,10 +124,10 @@ export default function DashboardContent({ currentView, title }: DashboardConten
 
         <Tabs value={viewMode} onValueChange={(value) => setViewMode(value as 'Assets' | 'History')} className="w-full">
           <TabsList className="w-full justify-start border-b rounded-none bg-transparent h-auto p-0">
-            <TabsTrigger value="Assets" className="pb-3 px-1 text-sm font-black data-[state=active]:text-primary data-[state=active]:shadow-none rounded-none border-b-2 border-transparent data-[state=active]:border-primary">
+            <TabsTrigger value="Assets" className="pb-3 px-1 data-[state=active]:text-primary data-[state=active]:shadow-none rounded-none border-b-2 border-transparent data-[state=active]:border-primary">
               자산 목록
             </TabsTrigger>
-            <TabsTrigger value="History" className="pb-3 px-1 text-sm font-black data-[state=active]:text-primary data-[state=active]:shadow-none rounded-none border-b-2 border-transparent data-[state=active]:border-primary">
+            <TabsTrigger value="History" className="pb-3 px-1 data-[state=active]:text-primary data-[state=active]:shadow-none rounded-none border-b-2 border-transparent data-[state=active]:border-primary">
               변동 추이
             </TabsTrigger>
           </TabsList>
@@ -147,7 +147,7 @@ export default function DashboardContent({ currentView, title }: DashboardConten
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <Card className="p-6 rounded-3xl">
                     <CardHeader className="p-0 mb-6">
-                      <CardTitle className="text-base font-black flex items-center gap-2">🌍 국가별 투자 비중</CardTitle>
+                      <CardTitle className="flex items-center gap-2">🌍 국가별 투자 비중</CardTitle>
                     </CardHeader>
                     <CardContent className="p-0">
                       <Charts assets={filteredAssets} groupBy="country" />
@@ -155,7 +155,7 @@ export default function DashboardContent({ currentView, title }: DashboardConten
                   </Card>
                   <Card className="p-6 rounded-3xl">
                     <CardHeader className="p-0 mb-6">
-                      <CardTitle className="text-base font-black flex items-center gap-2">📦 종목별 투자 비중</CardTitle>
+                      <CardTitle className="flex items-center gap-2">📦 종목별 투자 비중</CardTitle>
                     </CardHeader>
                     <CardContent className="p-0">
                       <Charts assets={filteredAssets} groupBy="name" />
@@ -175,7 +175,7 @@ export default function DashboardContent({ currentView, title }: DashboardConten
                 {currentView !== 'pension' && (
                   <Card className="p-6 rounded-3xl">
                     <CardHeader className="p-0 mb-6">
-                      <CardTitle className="text-base font-black">Asset Allocation</CardTitle>
+                      <CardTitle>Asset Allocation</CardTitle>
                     </CardHeader>
                     <CardContent className="p-0">
                       <Charts assets={filteredAssets} />
@@ -192,7 +192,7 @@ export default function DashboardContent({ currentView, title }: DashboardConten
                   </div>
                   <CardHeader className="p-0 mb-4 relative z-10">
                     <div className="flex items-center justify-between">
-                      <CardTitle className="text-base font-black text-white flex items-center gap-2">✨ Wealth AI</CardTitle>
+                      <CardTitle className="text-white flex items-center gap-2">✨ Wealth AI</CardTitle>
                       <Button
                         onClick={() => getAiAdvice(filteredAssets, stats, selectedOwner, currentView)}
                         disabled={isAiThinking || filteredAssets.length === 0}
@@ -218,7 +218,7 @@ export default function DashboardContent({ currentView, title }: DashboardConten
             <div className={`grid grid-cols-1 ${(currentView === 'pension' || currentView === 'stock') ? 'lg:grid-cols-2' : ''} gap-6`}>
               <Card className="p-6 sm:p-8 rounded-3xl">
                 <CardHeader className="p-0 mb-4">
-                  <CardTitle className="text-sm font-black text-muted-foreground uppercase tracking-widest">순자산/총자산 추이</CardTitle>
+                  <CardTitle className="text-muted-foreground uppercase tracking-widest">순자산/총자산 추이</CardTitle>
                 </CardHeader>
                 <CardContent className="p-0">
                   <HistoryChart data={historyData} />
@@ -227,7 +227,7 @@ export default function DashboardContent({ currentView, title }: DashboardConten
               {(currentView === 'pension' || currentView === 'stock') && (
                 <Card className="p-6 sm:p-8 rounded-3xl">
                   <CardHeader className="p-0 mb-4">
-                    <CardTitle className="text-sm font-black text-muted-foreground uppercase tracking-widest">수익금/수익률 추이</CardTitle>
+                    <CardTitle className="text-muted-foreground uppercase tracking-widest">수익금/수익률 추이</CardTitle>
                   </CardHeader>
                   <CardContent className="p-0">
                     <ProfitHistoryChart data={historyData} />
@@ -239,7 +239,7 @@ export default function DashboardContent({ currentView, title }: DashboardConten
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <Card className="p-6 rounded-3xl">
                   <CardHeader className="p-0 mb-2">
-                    <CardTitle className="text-sm font-black text-muted-foreground uppercase tracking-widest">Assets Flow</CardTitle>
+                    <CardTitle className="text-muted-foreground uppercase tracking-widest">Assets Flow</CardTitle>
                   </CardHeader>
                   <CardContent className="p-0">
                     <AssetLiabilityBarChart data={historyData} type="assets" />
@@ -247,7 +247,7 @@ export default function DashboardContent({ currentView, title }: DashboardConten
                 </Card>
                 <Card className="p-6 rounded-3xl">
                   <CardHeader className="p-0 mb-2">
-                    <CardTitle className="text-sm font-black text-muted-foreground uppercase tracking-widest">Liabilities Flow</CardTitle>
+                    <CardTitle className="text-muted-foreground uppercase tracking-widest">Liabilities Flow</CardTitle>
                   </CardHeader>
                   <CardContent className="p-0">
                     <AssetLiabilityBarChart data={historyData} type="liabilities" />

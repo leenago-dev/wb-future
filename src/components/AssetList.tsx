@@ -81,7 +81,7 @@ const AssetList: React.FC<Props> = ({ assets, onEdit, onDelete, exchangeRate = E
         <Card key={cat} className="rounded-3xl overflow-hidden">
           <CardHeader className="px-6 py-4 bg-muted/50 border-b">
             <div className="flex justify-between items-center">
-              <CardTitle className="font-black flex items-center gap-3">
+              <CardTitle className="flex items-center gap-3">
                 <span className="text-xl">{getCategoryIcon(cat as AssetCategory)}</span>
                 <span className="tracking-tight uppercase text-xs">
                   {cat === 'VIRTUAL_ASSET' ? '가상자산' :
@@ -91,7 +91,7 @@ const AssetList: React.FC<Props> = ({ assets, onEdit, onDelete, exchangeRate = E
                           cat === 'LOAN' ? '대출 및 부채' : '현금성 자산'}
                 </span>
               </CardTitle>
-              <Badge variant="outline" className="text-[10px] font-black uppercase">{items.length} items</Badge>
+              <Badge variant="outline" className="text-[10px] uppercase">{items.length} items</Badge>
             </div>
           </CardHeader>
           <CardContent className="p-0 divide-y">
@@ -106,12 +106,12 @@ const AssetList: React.FC<Props> = ({ assets, onEdit, onDelete, exchangeRate = E
                   <div className="flex-1">
                     <div className="flex items-center gap-2 mb-1 flex-wrap">
                       <p className="font-black text-foreground">{asset.name}</p>
-                      <Badge variant="secondary" className="text-[10px] uppercase font-black">{asset.owner}</Badge>
+                      <Badge variant="secondary" className="text-[10px] uppercase">{asset.owner}</Badge>
                       {asset.metadata.country && (
-                        <Badge variant="outline" className="text-[10px] font-black">📍 {asset.metadata.country}</Badge>
+                        <Badge variant="outline" className="text-[10px]">📍 {asset.metadata.country}</Badge>
                       )}
                       {isLoan && (
-                        <Badge variant={dsrExcluded ? 'secondary' : 'destructive'} className="text-[9px] uppercase font-black">
+                        <Badge variant={dsrExcluded ? 'secondary' : 'destructive'} className="text-[9px] uppercase">
                           {dsrExcluded ? 'DSR 제외' : 'DSR 포함'}
                         </Badge>
                       )}
@@ -174,8 +174,8 @@ const AssetList: React.FC<Props> = ({ assets, onEdit, onDelete, exchangeRate = E
                       })()}
                     </div>
                     <div className="flex gap-3 items-center opacity-0 group-hover:opacity-100 transition-opacity">
-                      <Button onClick={() => onEdit(asset)} variant="ghost" size="sm" className="text-[10px] font-black uppercase tracking-widest h-auto py-1 px-2">Edit</Button>
-                      <Button onClick={() => onDelete(asset.id)} variant="ghost" size="sm" className="text-[10px] font-black uppercase tracking-widest h-auto py-1 px-2 text-destructive hover:text-destructive">Del</Button>
+                      <Button onClick={() => onEdit(asset)} variant="ghost" size="sm" className="uppercase tracking-widest h-auto py-1 px-2">Edit</Button>
+                      <Button onClick={() => onDelete(asset.id)} variant="ghost" size="sm" className="uppercase tracking-widest h-auto py-1 px-2 text-destructive hover:text-destructive">Del</Button>
                     </div>
                   </div>
                 </div>

@@ -68,7 +68,7 @@ const FormField: React.FC<FormFieldProps> = ({
   className = '',
 }) => (
   <div className={className}>
-    <Label className="text-xs font-black text-muted-foreground mb-1 uppercase tracking-widest">
+    <Label className="mb-1">
       {label}
       {required && <span className="text-destructive ml-1">*</span>}
       {labelSuffix}
@@ -86,6 +86,7 @@ interface TextInputProps<T extends string | number = string | number> {
   step?: string;
   className?: string;
   transform?: (value: string) => string;
+  autoFocus?: boolean;
 }
 
 const TextInput = <T extends string | number = string | number>({
@@ -97,22 +98,50 @@ const TextInput = <T extends string | number = string | number>({
   step,
   className = '',
   transform,
+  autoFocus,
 }: TextInputProps<T>) => {
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const newValue = transform ? transform(e.target.value) : e.target.value;
-    const processedValue = (type === 'number' ? Number(newValue) : newValue) as T;
-    onChange(processedValue);
+  const formatNumberWithCommas = (num: number): string => {
+    if (num === 0) return '';
+    return num.toLocaleString('ko-KR');
   };
+
+  const parseNumberFromString = (str: string): number => {
+    const cleaned = str.replace(/,/g, '');
+    if (cleaned === '') return 0;
+    const parsed = Number(cleaned);
+    return isNaN(parsed) ? 0 : parsed;
+  };
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    let newValue = e.target.value;
+
+    if (transform) {
+      newValue = transform(newValue);
+    }
+
+    if (type === 'number') {
+      const numValue = parseNumberFromString(newValue);
+      onChange(numValue as T);
+    } else {
+      onChange(newValue as T);
+    }
+  };
+
+  const displayValue = type === 'number'
+    ? (value === 0 ? '' : formatNumberWithCommas(value as number))
+    : String(value);
 
   return (
     <Input
       required={required}
-      type={type}
+      type="text"
       step={step}
-      value={value}
+      value={displayValue}
       onChange={handleChange}
       placeholder={placeholder}
-      className={cn('rounded-2xl font-bold', className)}
+      className={className}
+      autoFocus={autoFocus}
+      inputMode={type === 'number' ? 'numeric' : undefined}
     />
   );
 };
@@ -194,6 +223,12 @@ const AssetForm: React.FC<Props> = ({ onSave, onClose, initialData }) => {
     }
   }, [ticker]);
 
+  useEffect(() => {
+    if (!initialData) {
+      setAmount(0);
+    }
+  }, [category, initialData]);
+
   const buildMetadata = () => {
     const baseMetadata: Record<string, unknown> = {};
 
@@ -237,12 +272,11 @@ const AssetForm: React.FC<Props> = ({ onSave, onClose, initialData }) => {
     <Dialog open={true} onOpenChange={onClose}>
       <DialogContent className="max-w-md rounded-3xl max-h-[85vh] overflow-hidden p-0">
         <DialogHeader className="px-6 py-5 border-b bg-muted/50">
-          <DialogTitle className="text-xl font-black">{initialData ? '수정하기' : '항목추가'}</DialogTitle>
+          <DialogTitle>{initialData ? '수정하기' : '항목추가'}</DialogTitle>
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="p-6 space-y-5 max-h-[calc(85vh-80px)] overflow-y-auto">
-          <div>
-            <Label className="block text-xs font-black text-muted-foreground uppercase tracking-widest mb-2">소유자</Label>
+          <FormField label="소유자">
             <div className="flex bg-muted p-1.5 rounded-2xl">
               {OWNER_FORM_OPTIONS.map((o) => {
                 const ownerValue = o as AssetOwner;
@@ -252,27 +286,28 @@ const AssetForm: React.FC<Props> = ({ onSave, onClose, initialData }) => {
                     type="button"
                     variant={owner === ownerValue ? 'default' : 'ghost'}
                     onClick={() => setOwner(ownerValue)}
-                    className="flex-1 py-2 text-xs font-bold rounded-xl"
+                    className="flex-1"
                   >
                     {OWNER_LABELS[ownerValue]}
                   </Button>
                 );
               })}
             </div>
-          </div>
+          </FormField>
 
-          <FormField label="카테고리" className="uppercase tracking-widest">
+          <FormField label="카테고리">
             <Select value={category} onValueChange={(val) => setCategory(val as AssetCategory)}>
-              <SelectTrigger className="rounded-2xl font-bold">
+              <SelectTrigger>
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value={AssetCategory.CASH}>현금성 자산</SelectItem>
-                <SelectItem value={AssetCategory.PENSION}>퇴직연금</SelectItem>
-                <SelectItem value={AssetCategory.STOCK}>주식/ETF</SelectItem>
-                <SelectItem value={AssetCategory.VIRTUAL_ASSET}>가상자산</SelectItem>
-                <SelectItem value={AssetCategory.REAL_ESTATE}>부동산</SelectItem>
-                <SelectItem value={AssetCategory.LOAN}>대출</SelectItem>
+                <SelectItem value={AssetCategory.CASH}>💰 현금성 자산</SelectItem>
+                <SelectItem value={AssetCategory.REAL_ESTATE}>🏠 부동산</SelectItem>
+                <SelectItem value={AssetCategory.PENSION}>☀️ 퇴직연금</SelectItem>
+                <SelectItem value={AssetCategory.STOCK}>📈 주식</SelectItem>
+                <SelectItem value={AssetCategory.VIRTUAL_ASSET}>₿ 가상자산</SelectItem>
+
+                <SelectItem value={AssetCategory.LOAN}>🏦 대출</SelectItem>
               </SelectContent>
             </Select>
           </FormField>
@@ -284,7 +319,7 @@ const AssetForm: React.FC<Props> = ({ onSave, onClose, initialData }) => {
                   <TextInput
                     value={ticker}
                     onChange={setTicker}
-                    placeholder={category === AssetCategory.VIRTUAL_ASSET ? "BTC, ETH" : "AAPL, TSLA, 005930.KS"}
+                    placeholder={category === AssetCategory.VIRTUAL_ASSET ? "BTC, ETH" : "AAPL, 005930.KS"}
                     required
                     transform={(val) => val.toUpperCase()}
                   />
@@ -292,7 +327,6 @@ const AssetForm: React.FC<Props> = ({ onSave, onClose, initialData }) => {
 
                 <FormField
                   label="이름"
-                  required
                   labelSuffix={
                     isFetchingName && (
                       <span className="ml-2 text-[10px] text-primary font-normal">조회 중...</span>
@@ -302,7 +336,7 @@ const AssetForm: React.FC<Props> = ({ onSave, onClose, initialData }) => {
                   <TextInput
                     value={name}
                     onChange={handleNameChange}
-                    placeholder="예: 미래에셋 퇴직연금, 삼성전자 등"
+                    placeholder="티커 입력 시 자동 조회됩니다."
                     required
                   />
                 </FormField>
@@ -330,9 +364,9 @@ const AssetForm: React.FC<Props> = ({ onSave, onClose, initialData }) => {
               </div>
 
               {isCountryCategory(category) && (
-                <FormField label="국가" required>
+                <FormField label="국가">
                   <Select value={country} onValueChange={setCountry}>
-                    <SelectTrigger className="rounded-2xl font-bold">
+                    <SelectTrigger>
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
@@ -382,7 +416,7 @@ const AssetForm: React.FC<Props> = ({ onSave, onClose, initialData }) => {
               <div className={GRID_LAYOUT_CLASSES}>
                 <FormField label="대출 종류" className="text-[10px] text-destructive/70 uppercase">
                   <Select value={loanType} onValueChange={(val) => setLoanType(val as LoanType)}>
-                    <SelectTrigger className="p-2 bg-background border-destructive/20 rounded-xl text-xs">
+                    <SelectTrigger>
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
@@ -399,13 +433,12 @@ const AssetForm: React.FC<Props> = ({ onSave, onClose, initialData }) => {
                     value={interestRate}
                     onChange={setInterestRate}
                     required
-                    className="p-2 bg-background border-destructive/20 rounded-xl text-xs"
                   />
                 </FormField>
               </div>
               <FormField label="상환 방식" className="text-[10px] text-destructive/70 uppercase">
                 <Select value={repaymentType} onValueChange={(val) => setRepaymentType(val as RepaymentType)}>
-                  <SelectTrigger className="p-2 bg-background border-destructive/20 rounded-xl text-xs">
+                  <SelectTrigger>
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
@@ -421,7 +454,6 @@ const AssetForm: React.FC<Props> = ({ onSave, onClose, initialData }) => {
                     value={loanPeriod}
                     onChange={setLoanPeriod}
                     required
-                    className="p-2 bg-background border-destructive/20 rounded-xl text-xs"
                   />
                 </FormField>
                 <FormField label="대출 원금" required className="text-[10px] text-destructive/70 uppercase">
@@ -430,14 +462,13 @@ const AssetForm: React.FC<Props> = ({ onSave, onClose, initialData }) => {
                     value={amount}
                     onChange={setAmount}
                     required
-                    className="p-2 bg-background border-destructive/20 rounded-xl text-xs"
                   />
                 </FormField>
               </div>
               <div className="pt-2 border-t border-destructive/20 mt-2">
                 <div className="flex items-center justify-between">
                   <div className="flex flex-col">
-                    <Label className="text-[11px] font-black text-destructive uppercase cursor-pointer">DSR 적용 제외 여부</Label>
+                    <Label className="cursor-pointer">DSR 적용 제외 여부</Label>
                     <span className="text-[9px] text-destructive/60 font-bold leading-tight">전세자금대출 등 제외 시 체크</span>
                   </div>
                   <Checkbox
@@ -457,13 +488,15 @@ const AssetForm: React.FC<Props> = ({ onSave, onClose, initialData }) => {
                 value={amount}
                 onChange={setAmount}
                 required
+                placeholder="금액을 입력하세요"
+                autoFocus
               />
             </FormField>
           )}
 
           <div className="pt-4 flex gap-4">
-            <Button type="button" onClick={onClose} variant="outline" className="flex-1 py-3 font-black rounded-2xl">취소</Button>
-            <Button type="submit" className="flex-1 py-3 font-black rounded-2xl shadow-lg shadow-primary/30">저장</Button>
+            <Button type="button" onClick={onClose} variant="outline" className="flex-1">취소</Button>
+            <Button type="submit" className="flex-1">저장</Button>
           </div>
         </form>
       </DialogContent>

@@ -78,7 +78,7 @@ const DsrCalculator: React.FC<Props> = ({ assets }) => {
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div className="flex flex-col">
             <div className="flex items-center gap-2">
-              <CardTitle className="text-lg font-black flex items-center gap-2">
+              <CardTitle className="flex items-center gap-2">
                 <span className="p-2 bg-primary/10 rounded-xl text-primary">📊</span>
                 DSR 계산기
               </CardTitle>
@@ -128,12 +128,12 @@ const DsrCalculator: React.FC<Props> = ({ assets }) => {
                     className="w-32 p-1 text-sm font-black border-b-2 border-primary bg-transparent h-auto rounded-none"
                     autoFocus
                   />
-                  <Button onClick={handleSaveIncome} size="sm" variant="ghost" className="text-[10px] font-black h-auto py-1 px-2">저장</Button>
+                  <Button onClick={handleSaveIncome} size="sm" variant="ghost" className="h-auto py-1 px-2">저장</Button>
                 </div>
               ) : (
                 <div className="flex items-center gap-2 mt-1">
                   <span className="text-sm font-black">{formatCurrency(income)}</span>
-                  <Button onClick={() => setIsEditing(true)} size="sm" variant="ghost" className="text-[10px] font-black h-auto py-1 px-2">수정</Button>
+                  <Button onClick={() => setIsEditing(true)} size="sm" variant="ghost" className="h-auto py-1 px-2">수정</Button>
                 </div>
               )}
             </CardContent>
@@ -241,7 +241,7 @@ const DsrCalculator: React.FC<Props> = ({ assets }) => {
               <span className={cn('w-2 h-2 rounded-full', detailView === 'included' ? 'bg-primary' : 'bg-muted-foreground')}></span>
               {detailView === 'included' ? 'DSR 산정 포함 대출 리스트' : 'DSR 적용 제외 대출 리스트'}
             </h4>
-            <Button onClick={() => setDetailView(null)} variant="ghost" size="sm" className="text-[10px] font-black uppercase h-auto py-1 px-2">
+            <Button onClick={() => setDetailView(null)} variant="ghost" size="sm" className="uppercase h-auto py-1 px-2">
               <X className="w-3 h-3 mr-1" />
               닫기
             </Button>
@@ -253,7 +253,7 @@ const DsrCalculator: React.FC<Props> = ({ assets }) => {
                 <CardContent className="p-0 flex flex-col justify-between">
                   <div className="flex justify-between items-start mb-2">
                     <span className="text-xs font-black truncate pr-2">{loan.name}</span>
-                    <Badge variant="outline" className="text-[9px] font-black uppercase">{loan.owner}</Badge>
+                    <Badge variant="outline" className="text-[9px] uppercase">{loan.owner}</Badge>
                   </div>
                   <div className="flex flex-col">
                     <span className="text-lg font-black">{formatCurrency(loan.amount)}</span>
