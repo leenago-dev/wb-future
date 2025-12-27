@@ -5,7 +5,7 @@
 // 환율 설정
 export const EXCHANGE_RATE = {
   DEFAULT_USD_KRW: 1450, // 기본 USD/KRW 환율 (API 실패 시 사용)
-  INITIAL_USD_KRW: 1300, // 초기 환율 (로딩 전 기본값)
+  INITIAL_USD_KRW: 1450, // 초기 환율 (로딩 전 기본값)
 } as const;
 
 // 캐시 설정
@@ -38,3 +38,14 @@ export const HISTORY = {
   MONTHS_COUNT: 6, // 표시할 히스토리 개월 수
   MARKET_VARIANCE_FACTOR: 0.015, // 월별 시장 변동 계수
 } as const;
+
+// 소유자별 표시 이름
+export const OWNER_LABELS = {
+  Total: '합계',
+  Leena: '밤이',
+  Husband: '웡이',
+  Common: '공통',
+} as const;
+
+// 소유자 필터 옵션 (표시 순서)
+export const OWNER_FILTER_OPTIONS = ['Total', 'Husband', 'Leena', 'Common'] as const;

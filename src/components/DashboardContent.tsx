@@ -13,6 +13,7 @@ import ProfitHistoryChart from '@/components/ProfitHistoryChart';
 import AssetLiabilityBarChart from '@/components/AssetLiabilityBarChart';
 import DsrCalculator from '@/components/DsrCalculator';
 import StockCard from '@/components/StockCard';
+import { OWNER_LABELS, OWNER_FILTER_OPTIONS } from '@/config/app';
 
 interface DashboardContentProps {
   currentView: ViewType;
@@ -58,13 +59,13 @@ export default function DashboardContent({ currentView, title }: DashboardConten
       <main className="max-w-6xl mx-auto px-4 sm:px-6 py-6 space-y-6">
         <div className="overflow-x-auto -mx-4 px-4 sm:mx-0 sm:px-0 scrollbar-hide">
           <div className="flex bg-white p-1 rounded-2xl border shadow-sm w-max sm:w-fit">
-            {['Total', 'Leena', 'Husband', 'Common'].map((owner) => (
+            {OWNER_FILTER_OPTIONS.map((owner) => (
               <button
                 key={owner}
-                onClick={() => setSelectedOwner(owner as any)}
+                onClick={() => setSelectedOwner(owner as 'Total' | AssetOwner)}
                 className={`px-4 sm:px-6 py-1.5 sm:py-2 rounded-xl text-xs sm:text-sm font-bold transition-all ${selectedOwner === owner ? 'bg-blue-600 text-white shadow-md' : 'text-gray-500 hover:text-gray-800'}`}
               >
-                {owner === 'Total' ? '우리 집 (합계)' : owner === 'Leena' ? 'Leena' : owner === 'Husband' ? '남편' : '공통'}
+                {OWNER_LABELS[owner]}
               </button>
             ))}
           </div>

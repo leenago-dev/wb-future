@@ -9,7 +9,7 @@ import { quoteCache } from '@/services/quoteCache';
 import { exchangeRateCache } from '@/services/exchangeRate';
 import { EXCHANGE_RATE, USER, HISTORY } from '@/config/app';
 
-export type ViewType = 'dashboard' | 'real-estate' | 'pension' | 'crypto';
+export type ViewType = 'dashboard' | 'real-estate' | 'pension' | 'crypto' | 'stock';
 
 export function useAssets(selectedOwner: 'Total' | AssetOwner, currentView: ViewType) {
   const [assets, setAssets] = useState<Asset[]>([]);
@@ -69,6 +69,7 @@ export function useAssets(selectedOwner: 'Total' | AssetOwner, currentView: View
     }
     if (currentView === 'pension') return baseAssets.filter(a => a.category === AssetCategory.PENSION);
     if (currentView === 'crypto') return baseAssets.filter(a => a.category === AssetCategory.VIRTUAL_ASSET);
+    if (currentView === 'stock') return baseAssets.filter(a => a.category === AssetCategory.STOCK);
 
     return baseAssets;
   }, [assets, selectedOwner, currentView]);
@@ -147,6 +148,7 @@ export function useAssets(selectedOwner: 'Total' | AssetOwner, currentView: View
               if (currentView === 'real-estate' && asset.category !== AssetCategory.REAL_ESTATE && asset.category !== AssetCategory.LOAN) return;
               if (currentView === 'pension' && asset.category !== AssetCategory.PENSION) return;
               if (currentView === 'crypto' && asset.category !== AssetCategory.VIRTUAL_ASSET) return;
+              if (currentView === 'stock' && asset.category !== AssetCategory.STOCK) return;
             }
 
             const isLoan = asset.category === AssetCategory.LOAN;

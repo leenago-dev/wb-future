@@ -11,21 +11,26 @@ function SidebarLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const pathname = usePathname();
 
+  const routes: Record<ViewType, string> = {
+    'dashboard': '/',
+    'real-estate': '/real-estate',
+    'pension': '/pension',
+    'crypto': '/crypto',
+    'stock': '/stock',
+  };
+
   const getCurrentView = (): ViewType => {
+    if (!pathname) return 'dashboard';
     if (pathname === '/') return 'dashboard';
-    if (pathname?.startsWith('/real-estate')) return 'real-estate';
-    if (pathname?.startsWith('/pension')) return 'pension';
-    if (pathname?.startsWith('/crypto')) return 'crypto';
-    return 'dashboard';
+
+    const matchedView = (Object.entries(routes) as [ViewType, string][]).find(
+      ([, route]) => route !== '/' && pathname.startsWith(route)
+    );
+
+    return matchedView?.[0] ?? 'dashboard';
   };
 
   const handleViewChange = (view: ViewType) => {
-    const routes: Record<ViewType, string> = {
-      dashboard: '/',
-      'real-estate': '/real-estate',
-      pension: '/pension',
-      crypto: '/crypto',
-    };
     router.push(routes[view]);
   };
 
