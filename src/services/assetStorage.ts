@@ -1,6 +1,7 @@
 import { Asset } from '@/types';
+import { STORAGE_KEYS } from '@/config/app';
 
-const STORAGE_KEY = 'wealth_dash_assets';
+const STORAGE_KEY = STORAGE_KEYS.ASSETS;
 
 export const getAssets = (): Asset[] => {
   const data = localStorage.getItem(STORAGE_KEY);

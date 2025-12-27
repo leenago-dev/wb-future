@@ -1,64 +1,59 @@
-import { CACHE, STORAGE_KEYS } from '@/config/app';
+import { EXCHANGE_RATE, CACHE, STORAGE_KEYS, EXCHANGE_RATE_API } from '@/config/app';
 
-interface QuoteData {
-  symbol: string;
-  price: number;
-  currency?: string;
-  name?: string;
-  changePercent?: number;
-}
-
-interface CachedQuote {
-  data: QuoteData;
+interface ExchangeRateData {
+  rate: number;
   timestamp: number;
 }
 
-interface CacheStorage {
-  [symbol: string]: CachedQuote;
+interface CachedRate {
+  data: ExchangeRateData;
+  timestamp: number;
 }
 
-class QuoteCache {
-  private readonly STORAGE_KEY = STORAGE_KEYS.QUOTE_CACHE;
+interface RateCacheStorage {
+  [pair: string]: CachedRate;
+}
+
+class ExchangeRateCache {
+  private readonly STORAGE_KEY = STORAGE_KEYS.EXCHANGE_RATE_CACHE;
   private readonly TTL = CACHE.TTL_MS;
-  private pendingRequests = new Map<string, Promise<QuoteData>>();
+  private pendingRequests = new Map<string, Promise<number>>();
+  private readonly DEFAULT_RATE = EXCHANGE_RATE.DEFAULT_USD_KRW;
 
   constructor() {
     this._pruneCache();
   }
 
-  async getQuote(symbol: string, forceRefresh = false): Promise<QuoteData> {
-    if (!symbol) {
-      throw new Error('티커를 입력해주세요.');
-    }
-
-    const normalizedSymbol = symbol.trim().toUpperCase();
+  async getUsdKrwRate(forceRefresh = false): Promise<number> {
+    const pair = EXCHANGE_RATE_API.PAIR;
 
     if (!forceRefresh) {
-      const cached = this._getFromStorage(normalizedSymbol);
+      const cached = this._getFromStorage(pair);
       if (cached) {
         const now = Date.now();
         if (now - cached.timestamp < this.TTL) {
-          return cached.data;
+          return cached.data.rate;
         }
       }
     }
 
-    if (this.pendingRequests.has(normalizedSymbol)) {
-      return this.pendingRequests.get(normalizedSymbol)!;
+    if (this.pendingRequests.has(pair)) {
+      return this.pendingRequests.get(pair)!;
     }
 
-    const request = this._fetchQuote(normalizedSymbol);
-    this.pendingRequests.set(normalizedSymbol, request);
+    const request = this._fetchExchangeRate();
+    this.pendingRequests.set(pair, request);
 
     try {
-      const quote = await request;
-      this._saveToStorage(normalizedSymbol, quote);
+      const rate = await request;
+      this._saveToStorage(pair, rate);
       this._pruneCache();
-      return quote;
+      return rate;
     } catch (error) {
-      throw error;
+      console.warn('환율 조회 실패, 기본값 사용:', error);
+      return this.DEFAULT_RATE;
     } finally {
-      this.pendingRequests.delete(normalizedSymbol);
+      this.pendingRequests.delete(pair);
     }
   }
 
@@ -72,25 +67,23 @@ class QuoteCache {
     }
   }
 
-  private _fetchQuote(symbol: string): Promise<QuoteData> {
-    return fetch(`/api/quote?symbol=${symbol}`)
+  private _fetchExchangeRate(): Promise<number> {
+    return fetch(`/api/quote?symbol=${EXCHANGE_RATE_API.SYMBOL}`)
       .then((res) => {
         if (!res.ok) {
-          return res.json().then((data) => {
-            throw new Error(data.error || '주식 정보를 가져오는 중 오류가 발생했습니다.');
-          });
+          throw new Error('환율 정보를 가져오는 중 오류가 발생했습니다.');
         }
         return res.json();
       })
-      .then((data: QuoteData) => {
+      .then((data: { price: number }) => {
         if (!data || !data.price) {
-          throw new Error('가격 정보를 찾을 수 없습니다.');
+          throw new Error('환율 정보를 찾을 수 없습니다.');
         }
-        return data;
+        return data.price;
       });
   }
 
-  private _getFromStorage(symbol: string): CachedQuote | undefined {
+  private _getFromStorage(pair: string): CachedRate | undefined {
     try {
       if (typeof window === 'undefined' || !window.localStorage) {
         return undefined;
@@ -101,25 +94,28 @@ class QuoteCache {
         return undefined;
       }
 
-      const cache: CacheStorage = JSON.parse(stored);
-      return cache[symbol];
+      const cache: RateCacheStorage = JSON.parse(stored);
+      return cache[pair];
     } catch (error) {
       console.warn('로컬 스토리지에서 캐시 읽기 실패:', error);
       return undefined;
     }
   }
 
-  private _saveToStorage(symbol: string, data: QuoteData): void {
+  private _saveToStorage(pair: string, rate: number): void {
     try {
       if (typeof window === 'undefined' || !window.localStorage) {
         return;
       }
 
       const stored = window.localStorage.getItem(this.STORAGE_KEY);
-      const cache: CacheStorage = stored ? JSON.parse(stored) : {};
+      const cache: RateCacheStorage = stored ? JSON.parse(stored) : {};
 
-      cache[symbol] = {
-        data,
+      cache[pair] = {
+        data: {
+          rate,
+          timestamp: Date.now(),
+        },
         timestamp: Date.now(),
       };
 
@@ -129,7 +125,7 @@ class QuoteCache {
     }
   }
 
-  private _loadFromStorage(): CacheStorage {
+  private _loadFromStorage(): RateCacheStorage {
     try {
       if (typeof window === 'undefined' || !window.localStorage) {
         return {};
@@ -140,7 +136,7 @@ class QuoteCache {
         return {};
       }
 
-      return JSON.parse(stored) as CacheStorage;
+      return JSON.parse(stored) as RateCacheStorage;
     } catch (error) {
       console.warn('로컬 스토리지에서 캐시 로드 실패:', error);
       return {};
@@ -153,9 +149,9 @@ class QuoteCache {
       const cache = this._loadFromStorage();
       let hasChanges = false;
 
-      Object.keys(cache).forEach((symbol) => {
-        if (now - cache[symbol].timestamp > this.TTL) {
-          delete cache[symbol];
+      Object.keys(cache).forEach((pair) => {
+        if (now - cache[pair].timestamp > this.TTL) {
+          delete cache[pair];
           hasChanges = true;
         }
       });
@@ -171,5 +167,4 @@ class QuoteCache {
   }
 }
 
-export const quoteCache = new QuoteCache();
-export type { QuoteData };
+export const exchangeRateCache = new ExchangeRateCache();

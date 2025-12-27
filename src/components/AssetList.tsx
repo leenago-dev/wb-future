@@ -2,15 +2,20 @@
 
 import React from 'react';
 import { Asset, AssetCategory } from '@/types';
+import { EXCHANGE_RATE } from '@/config/app';
 
 interface Props {
   assets: Asset[];
   onEdit: (asset: Asset) => void;
   onDelete: (id: string) => void;
+  exchangeRate?: number;
 }
 
-const AssetList: React.FC<Props> = ({ assets, onEdit, onDelete }) => {
-  const formatCurrency = (val: number) => {
+const AssetList: React.FC<Props> = ({ assets, onEdit, onDelete, exchangeRate = EXCHANGE_RATE.INITIAL_USD_KRW }) => {
+  const formatCurrency = (val: number, currency: 'KRW' | 'USD' = 'KRW') => {
+    if (currency === 'USD') {
+      return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(val);
+    }
     return new Intl.NumberFormat('ko-KR', { style: 'currency', currency: 'KRW' }).format(val);
   };
 
@@ -47,7 +52,7 @@ const AssetList: React.FC<Props> = ({ assets, onEdit, onDelete }) => {
   };
 
   const getCategoryIcon = (cat: AssetCategory) => {
-    switch(cat) {
+    switch (cat) {
       case AssetCategory.CASH: return '💰';
       case AssetCategory.REAL_ESTATE: return '🏠';
       case AssetCategory.PENSION: return '👴';
@@ -74,10 +79,10 @@ const AssetList: React.FC<Props> = ({ assets, onEdit, onDelete }) => {
               <span className="text-xl">{getCategoryIcon(cat as AssetCategory)}</span>
               <span className="tracking-tight uppercase text-xs">
                 {cat === 'VIRTUAL_ASSET' ? '가상자산' :
-                 cat === 'REAL_ESTATE' ? '부동산' :
-                 cat === 'PENSION' ? '퇴직연금' :
-                 cat === 'STOCK' ? '주식/ETF' :
-                 cat === 'LOAN' ? '대출 및 부채' : '현금성 자산'}
+                  cat === 'REAL_ESTATE' ? '부동산' :
+                    cat === 'PENSION' ? '퇴직연금' :
+                      cat === 'STOCK' ? '주식/ETF' :
+                        cat === 'LOAN' ? '대출 및 부채' : '현금성 자산'}
               </span>
             </h3>
             <span className="bg-white px-3 py-1 rounded-full text-[10px] font-black text-gray-400 border border-gray-100 uppercase">{items.length} items</span>
@@ -118,19 +123,48 @@ const AssetList: React.FC<Props> = ({ assets, onEdit, onDelete }) => {
                   </div>
                   <div className="text-left sm:text-right flex flex-row sm:flex-col justify-between items-end sm:justify-center gap-2">
                     <div>
-                      <p className={`font-black ${isLoan ? 'text-red-600' : 'text-gray-900'} text-lg leading-tight tracking-tight`}>
-                        {formatCurrency(calculateValue(asset))}
-                      </p>
+                      {(() => {
+                        const value = calculateValue(asset);
+                        const isUsdAsset = asset.currency === 'USD' || asset.metadata.country === '미국';
+                        const usdValue = isUsdAsset ? value : undefined;
+                        const krwValue = isUsdAsset ? value * exchangeRate : value;
+
+                        return (
+                          <p className={`font-black ${isLoan ? 'text-red-600' : 'text-gray-900'} text-lg leading-tight tracking-tight`}>
+                            {isUsdAsset && usdValue !== undefined ? (
+                              <>
+                                {formatCurrency(usdValue, 'USD')} | {formatCurrency(krwValue, 'KRW')}
+                              </>
+                            ) : (
+                              formatCurrency(krwValue, 'KRW')
+                            )}
+                          </p>
+                        );
+                      })()}
                       {isLoan && (
                         <p className="text-[11px] font-black text-red-400/80 mt-1">
                           월 예상 납입: {formatCurrency(monthlyPay)}
                         </p>
                       )}
-                      {profit !== 0 && (
-                        <p className={`text-[11px] font-black mt-1 ${profit > 0 ? 'text-red-500' : 'text-blue-500'}`}>
-                          {profit > 0 ? '▲' : '▼'} {Math.abs(profit).toFixed(2)}%
-                        </p>
-                      )}
+                      {profit !== 0 && (() => {
+                        const currentValue = calculateValue(asset);
+                        const principal = (asset.metadata.avg_price || 0) * asset.amount;
+                        const profitAmount = currentValue - principal;
+                        const isUsdAsset = asset.currency === 'USD' || asset.metadata.country === '미국';
+                        const usdProfitAmount = isUsdAsset ? profitAmount : undefined;
+                        const krwProfitAmount = isUsdAsset ? profitAmount * exchangeRate : profitAmount;
+
+                        return (
+                          <p className={`text-[11px] font-black mt-1 ${profit > 0 ? 'text-red-500' : 'text-blue-500'}`}>
+                            {profit > 0 ? '▲' : '▼'} {Math.abs(profit).toFixed(2)}%
+                            {isUsdAsset && usdProfitAmount !== undefined ? (
+                              <> ({formatCurrency(usdProfitAmount, 'USD')} | {formatCurrency(krwProfitAmount, 'KRW')})</>
+                            ) : (
+                              <> ({formatCurrency(krwProfitAmount, 'KRW')})</>
+                            )}
+                          </p>
+                        );
+                      })()}
                     </div>
                     <div className="flex gap-3 items-center opacity-0 group-hover:opacity-100 transition-opacity">
                       <button onClick={() => onEdit(asset)} className="text-blue-500 hover:text-blue-700 text-[10px] font-black uppercase tracking-widest">Edit</button>
@@ -146,7 +180,7 @@ const AssetList: React.FC<Props> = ({ assets, onEdit, onDelete }) => {
       {assets.length === 0 && (
         <div className="bg-white rounded-3xl border-2 border-dashed border-gray-100 p-20 text-center flex flex-col items-center">
           <div className="w-16 h-16 bg-gray-50 rounded-full flex items-center justify-center mb-4">
-             <svg className="w-8 h-8 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path></svg>
+            <svg className="w-8 h-8 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path></svg>
           </div>
           <p className="text-gray-400 font-black tracking-tight">자산 정보를 입력하고 관리를 시작하세요.</p>
         </div>

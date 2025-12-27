@@ -38,6 +38,7 @@ export interface Asset {
   created_at: string;
   updated_at: string;
   current_price?: number;
+  currency?: string; // 통화 (USD, KRW 등)
 }
 
 export interface DashboardStats {

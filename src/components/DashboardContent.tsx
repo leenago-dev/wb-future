@@ -26,7 +26,7 @@ export default function DashboardContent({ currentView, title }: DashboardConten
   const [editingAsset, setEditingAsset] = useState<Asset | undefined>();
   const { setIsMobileOpen } = useSidebar();
 
-  const { filteredAssets, stats, historyData, isLoadingPrices, handleSave, handleDelete } = useAssets(selectedOwner, currentView);
+  const { filteredAssets, stats, historyData, isLoadingPrices, exchangeRate, handleSave, handleDelete } = useAssets(selectedOwner, currentView);
   const { aiAdvice, isAiThinking, getAiAdvice } = useAiAdvice();
 
   const formatCurrency = (val: number) => {
@@ -93,12 +93,10 @@ export default function DashboardContent({ currentView, title }: DashboardConten
               </span>
             </div>
           ) : (
-            currentView !== 'pension' && (
-              <div className="bg-white p-5 sm:p-6 rounded-3xl border shadow-sm flex flex-col justify-between hover:border-red-100 transition-colors group">
-                <span className="text-xs sm:text-sm text-gray-400 font-bold uppercase tracking-wider">Liabilities</span>
-                <span className="text-xl sm:text-2xl font-black text-red-600 mt-2">{formatCurrency(stats.totalLiabilities)}</span>
-              </div>
-            )
+            <div className="bg-white p-5 sm:p-6 rounded-3xl border shadow-sm flex flex-col justify-between hover:border-red-100 transition-colors group">
+              <span className="text-xs sm:text-sm text-gray-400 font-bold uppercase tracking-wider">Liabilities</span>
+              <span className="text-xl sm:text-2xl font-black text-red-600 mt-2">{formatCurrency(stats.totalLiabilities)}</span>
+            </div>
           )}
 
           <div className="bg-gradient-to-br from-blue-600 to-indigo-700 p-5 sm:p-6 rounded-3xl shadow-xl flex flex-col justify-between text-white transform transition-transform hover:scale-[1.01] sm:col-span-2 lg:col-span-1">
@@ -136,7 +134,7 @@ export default function DashboardContent({ currentView, title }: DashboardConten
 
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
               <div className="lg:col-span-2 space-y-4">
-                <AssetList assets={filteredAssets} onEdit={(asset) => { setEditingAsset(asset); setIsFormOpen(true); }} onDelete={handleDelete} />
+                <AssetList assets={filteredAssets} onEdit={(asset) => { setEditingAsset(asset); setIsFormOpen(true); }} onDelete={handleDelete} exchangeRate={exchangeRate} />
               </div>
 
               <div className="space-y-6">
