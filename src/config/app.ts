@@ -86,6 +86,12 @@ export const SIDEBAR_USER_NAME = '웡밤이' as const;
 // 국가 목록
 export const COUNTRIES = ['한국', '미국', '중국', '일본', '기타'] as const;
 
+// 대출 종류 옵션
+export const LOAN_TYPES = ['신용대출', '주택담보대출', '마이너스통장'] as const;
+
+// 상환 방식 옵션
+export const REPAYMENT_TYPES = ['만기일시상환', '원리금균등분할상환'] as const;
+
 // 사이드바 메뉴 아이템 설정
 export const SIDEBAR_MENU_ITEMS = [
   { id: 'dashboard', label: '종합 대시보드' },

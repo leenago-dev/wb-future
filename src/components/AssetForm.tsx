@@ -11,7 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Checkbox } from '@/components/ui/checkbox';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
-import { OWNER_FORM_OPTIONS, OWNER_LABELS, DEFAULT_OWNER, COUNTRIES } from '@/config/app';
+import { OWNER_FORM_OPTIONS, OWNER_LABELS, DEFAULT_OWNER, COUNTRIES, LOAN_TYPES, REPAYMENT_TYPES } from '@/config/app';
 
 interface Props {
   onSave: (asset: Omit<Asset, 'id' | 'updated_at' | 'user_id' | 'created_at'>) => void;
@@ -454,7 +454,7 @@ const AssetForm: React.FC<Props> = ({ onSave, onClose, initialData }) => {
                 <TextInput
                   value={address}
                   onChange={setAddress}
-                  placeholder="서울시..."
+                  placeholder="상세주소를 입력해주세요"
                   required
                 />
               </FormField>
@@ -480,7 +480,7 @@ const AssetForm: React.FC<Props> = ({ onSave, onClose, initialData }) => {
           )}
 
           {category === AssetCategory.LOAN && (
-            <div className="space-y-4 p-5 bg-destructive/5 rounded-3xl border border-destructive/20">
+            <div className="space-y-4 p-5 bg-destructive/5 rounded-xl border border-destructive/20">
               <div className={GRID_LAYOUT_CLASSES}>
                 <FormField label="대출 종류" className="text-[10px] text-destructive/70 uppercase">
                   <Select value={loanType} onValueChange={(val) => setLoanType(val as LoanType)}>
@@ -488,12 +488,24 @@ const AssetForm: React.FC<Props> = ({ onSave, onClose, initialData }) => {
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="신용대출">신용대출</SelectItem>
-                      <SelectItem value="주택담보대출">주택담보대출</SelectItem>
-                      <SelectItem value="마이너스통장">마이너스통장</SelectItem>
+                      {LOAN_TYPES.map((loanTypeOption) => (
+                        <SelectItem key={loanTypeOption} value={loanTypeOption}>
+                          {loanTypeOption}
+                        </SelectItem>
+                      ))}
                     </SelectContent>
                   </Select>
                 </FormField>
+                <FormField label="대출명" required className="text-[10px] text-destructive/70 uppercase">
+                  <TextInput
+                    type="text"
+                    value={name}
+                    onChange={setName}
+                    required
+                  />
+                </FormField>
+              </div>
+              <div className={GRID_LAYOUT_CLASSES}>
                 <FormField label="이율 (%)" required className="text-[10px] text-destructive/70 uppercase">
                   <TextInput
                     type="number"
@@ -503,18 +515,23 @@ const AssetForm: React.FC<Props> = ({ onSave, onClose, initialData }) => {
                     required
                   />
                 </FormField>
+                <FormField label="상환 방식" className="text-[10px] text-destructive/70 uppercase">
+                  <Select value={repaymentType} onValueChange={(val) => setRepaymentType(val as RepaymentType)}>
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {REPAYMENT_TYPES.map((repaymentTypeOption) => (
+                        <SelectItem key={repaymentTypeOption} value={repaymentTypeOption}>
+                          {repaymentTypeOption}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </FormField>
+
               </div>
-              <FormField label="상환 방식" className="text-[10px] text-destructive/70 uppercase">
-                <Select value={repaymentType} onValueChange={(val) => setRepaymentType(val as RepaymentType)}>
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="만기일시상환">만기일시상환</SelectItem>
-                    <SelectItem value="원리금균등분할상환">원리금균등분할상환</SelectItem>
-                  </SelectContent>
-                </Select>
-              </FormField>
+
               <div className={GRID_LAYOUT_CLASSES}>
                 <FormField label="기간 (개월)" required className="text-[10px] text-destructive/70 uppercase">
                   <TextInput

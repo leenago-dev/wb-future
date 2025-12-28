@@ -16,12 +16,10 @@ interface Props {
   assets: Asset[];
 }
 
-type DetailViewType = 'included' | 'excluded' | null;
-
 const DsrCalculator: React.FC<Props> = ({ assets }) => {
   const [income, setIncome] = useState<number>(0);
   const [isEditing, setIsEditing] = useState(false);
-  const [detailView, setDetailView] = useState<DetailViewType>(null);
+  const [isDetailViewOpen, setIsDetailViewOpen] = useState<boolean>(false);
 
   useEffect(() => {
     const profile = getUserProfile();
@@ -68,8 +66,8 @@ const DsrCalculator: React.FC<Props> = ({ assets }) => {
     return new Intl.NumberFormat('ko-KR', { style: 'currency', currency: 'KRW' }).format(val);
   };
 
-  const toggleDetailView = (type: DetailViewType) => {
-    setDetailView(detailView === type ? null : type);
+  const toggleDetailView = () => {
+    setIsDetailViewOpen(!isDetailViewOpen);
   };
 
   return (
@@ -182,105 +180,98 @@ const DsrCalculator: React.FC<Props> = ({ assets }) => {
           )}
 
           {/* Detailed Loan Lists Section - 1:1 Split */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-6 border-t">
-            {/* Left: Included Loans */}
-            <div className="space-y-4">
-              <div className="flex items-center justify-between">
-                <h4 className="text-sm font-black flex items-center gap-2 uppercase tracking-widest">
-                  <span className="w-2 h-2 rounded-full bg-primary"></span>
-                  DSR 산정 포함 대출
-                </h4>
-                <Button
-                  onClick={() => toggleDetailView('included')}
-                  variant={detailView === 'included' ? 'default' : 'ghost'}
-                  size="sm"
-                  className="uppercase h-auto py-1 px-2 text-[10px]"
-                >
-                  {detailView === 'included' ? '숨기기' : '상세보기'}
-                </Button>
-              </div>
-              {detailView === 'included' && (
-                <div className="space-y-3 animate-in fade-in slide-in-from-top-4 duration-300">
-                  {includedLoans.length > 0 ? (
-                    includedLoans.map(loan => (
-                      <Card key={loan.id} className="p-4 rounded-2xl hover:border-primary transition-colors">
-                        <CardContent className="p-0 flex flex-col justify-between">
-                          <div className="flex justify-between items-start mb-2">
-                            <span className="text-xs font-black truncate pr-2">{loan.name}</span>
-                            <Badge variant="outline" className="text-[9px] uppercase">{OWNER_LABELS[loan.owner as AssetOwner]}</Badge>
-                          </div>
-                          <div className="flex flex-col">
-                            <span className="text-lg font-black">{formatCurrency(loan.amount)}</span>
-                            <div className="flex items-center gap-2 mt-2 opacity-60 text-[10px] font-bold">
-                              <span>{loan.metadata.interest_rate}%</span>
-                              <span>•</span>
-                              <span>{loan.metadata.repayment_type}</span>
-                            </div>
-                            <div className="mt-3 pt-3 border-t">
-                              <span className="text-[9px] font-black text-muted-foreground uppercase">DSR 산정 연간 상환액</span>
-                              <p className="text-xs font-black text-primary">{formatCurrency(calculateAnnualRepaymentForDsr(loan))}</p>
-                            </div>
-                          </div>
-                        </CardContent>
-                      </Card>
-                    ))
-                  ) : (
-                    <Card className="py-12 border-2 border-dashed">
-                      <CardContent className="text-center p-0">
-                        <p className="text-xs font-black text-muted-foreground">해당하는 대출 내역이 없습니다.</p>
-                      </CardContent>
-                    </Card>
-                  )}
-                </div>
-              )}
+          <div className="space-y-4 pt-6 border-t">
+            <div className="flex items-center justify-between">
+              <h4 className="text-sm font-black uppercase tracking-widest">대출 상세 내역</h4>
+              <Button
+                onClick={toggleDetailView}
+                variant={isDetailViewOpen ? 'default' : 'ghost'}
+                size="sm"
+                className="uppercase h-auto py-1 px-2 text-[10px]"
+              >
+                {isDetailViewOpen ? '숨기기' : '상세보기'}
+              </Button>
             </div>
-
-            {/* Right: Excluded Loans */}
-            <div className="space-y-4">
-              <div className="flex items-center justify-between">
-                <h4 className="text-sm font-black flex items-center gap-2 uppercase tracking-widest">
-                  <span className="w-2 h-2 rounded-full bg-muted-foreground"></span>
-                  DSR 적용 제외 대출
-                </h4>
-                <Button
-                  onClick={() => toggleDetailView('excluded')}
-                  variant={detailView === 'excluded' ? 'secondary' : 'ghost'}
-                  size="sm"
-                  className="uppercase h-auto py-1 px-2 text-[10px]"
-                >
-                  {detailView === 'excluded' ? '숨기기' : '상세보기'}
-                </Button>
-              </div>
-              {detailView === 'excluded' && (
-                <div className="space-y-3 animate-in fade-in slide-in-from-top-4 duration-300">
-                  {excludedLoans.length > 0 ? (
-                    excludedLoans.map(loan => (
-                      <Card key={loan.id} className="p-4 rounded-2xl hover:border-primary transition-colors">
-                        <CardContent className="p-0 flex flex-col justify-between">
-                          <div className="flex justify-between items-start mb-2">
-                            <span className="text-xs font-black truncate pr-2">{loan.name}</span>
-                            <Badge variant="outline" className="text-[9px] uppercase">{OWNER_LABELS[loan.owner as AssetOwner]}</Badge>
-                          </div>
-                          <div className="flex flex-col">
-                            <span className="text-lg font-black">{formatCurrency(loan.amount)}</span>
-                            <div className="flex items-center gap-2 mt-2 opacity-60 text-[10px] font-bold">
-                              <span>{loan.metadata.interest_rate}%</span>
-                              <span>•</span>
-                              <span>{loan.metadata.repayment_type}</span>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {/* Left: Included Loans */}
+              <div className="space-y-4">
+                <div className="flex items-center gap-2">
+                  <h5 className="text-sm font-black flex items-center gap-2 uppercase tracking-widest">
+                    <span className="w-2 h-2 rounded-full bg-primary"></span>
+                    DSR 산정 포함 대출
+                  </h5>
+                </div>
+                {isDetailViewOpen && (
+                  <div className="space-y-3 animate-in fade-in slide-in-from-top-4 duration-300">
+                    {includedLoans.length > 0 ? (
+                      includedLoans.map(loan => (
+                        <Card key={loan.id} className="p-4 rounded-2xl hover:border-primary transition-colors">
+                          <CardContent className="p-0 flex flex-col justify-between">
+                            <div className="flex justify-between items-start mb-2">
+                              <span className="text-xs font-black truncate pr-2">{loan.name}</span>
+                              <Badge variant="outline" className="text-[9px] uppercase">{OWNER_LABELS[loan.owner as AssetOwner]}</Badge>
                             </div>
-                          </div>
+                            <div className="flex flex-col">
+                              <span className="text-lg font-black">{formatCurrency(loan.amount)}</span>
+                              <div className="flex items-center gap-2 mt-2 opacity-60 text-[10px] font-bold">
+                                <span>{loan.metadata.interest_rate}%</span>
+                                <span>•</span>
+                                <span>{loan.metadata.repayment_type}</span>
+                              </div>
+                            </div>
+                          </CardContent>
+                        </Card>
+                      ))
+                    ) : (
+                      <Card className="py-12 border-2 border-dashed">
+                        <CardContent className="text-center p-0">
+                          <p className="text-xs font-black text-muted-foreground">해당하는 대출 내역이 없습니다.</p>
                         </CardContent>
                       </Card>
-                    ))
-                  ) : (
-                    <Card className="py-12 border-2 border-dashed">
-                      <CardContent className="text-center p-0">
-                        <p className="text-xs font-black text-muted-foreground">해당하는 대출 내역이 없습니다.</p>
-                      </CardContent>
-                    </Card>
-                  )}
+                    )}
+                  </div>
+                )}
+              </div>
+
+              {/* Right: Excluded Loans */}
+              <div className="space-y-4">
+                <div className="flex items-center gap-2">
+                  <h5 className="text-sm font-black flex items-center gap-2 uppercase tracking-widest">
+                    <span className="w-2 h-2 rounded-full bg-muted-foreground"></span>
+                    DSR 적용 제외 대출
+                  </h5>
                 </div>
-              )}
+                {isDetailViewOpen && (
+                  <div className="space-y-3 animate-in fade-in slide-in-from-top-4 duration-300">
+                    {excludedLoans.length > 0 ? (
+                      excludedLoans.map(loan => (
+                        <Card key={loan.id} className="p-4 rounded-2xl hover:border-primary transition-colors">
+                          <CardContent className="p-0 flex flex-col justify-between">
+                            <div className="flex justify-between items-start mb-2">
+                              <span className="text-xs font-black truncate pr-2">{loan.name}</span>
+                              <Badge variant="outline" className="text-[9px] uppercase">{OWNER_LABELS[loan.owner as AssetOwner]}</Badge>
+                            </div>
+                            <div className="flex flex-col">
+                              <span className="text-lg font-black">{formatCurrency(loan.amount)}</span>
+                              <div className="flex items-center gap-2 mt-2 opacity-60 text-[10px] font-bold">
+                                <span>{loan.metadata.interest_rate}%</span>
+                                <span>•</span>
+                                <span>{loan.metadata.repayment_type}</span>
+                              </div>
+                            </div>
+                          </CardContent>
+                        </Card>
+                      ))
+                    ) : (
+                      <Card className="py-12 border-2 border-dashed">
+                        <CardContent className="text-center p-0">
+                          <p className="text-xs font-black text-muted-foreground">해당하는 대출 내역이 없습니다.</p>
+                        </CardContent>
+                      </Card>
+                    )}
+                  </div>
+                )}
+              </div>
             </div>
           </div>
         </div>

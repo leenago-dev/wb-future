@@ -106,12 +106,12 @@ const AssetList: React.FC<Props> = ({ assets, onEdit, onDelete, exchangeRate = E
                   <div className="flex-1">
                     <div className="flex items-center gap-2 mb-1 flex-wrap">
                       <p className="font-black text-foreground">{asset.name}</p>
-                      <Badge variant="secondary" className="text-[10px] uppercase">{OWNER_LABELS[asset.owner as AssetOwner]}</Badge>
+                      <Badge variant="default" className="px-2 py-0.5 text-[11px] uppercase">{OWNER_LABELS[asset.owner as AssetOwner]}</Badge>
                       {asset.metadata.country && (
-                        <Badge variant="outline" className="text-[10px]">📍 {asset.metadata.country}</Badge>
+                        <Badge variant="outline" className="text-[11px]">📍 {asset.metadata.country}</Badge>
                       )}
                       {isLoan && (
-                        <Badge variant={dsrExcluded ? 'secondary' : 'destructive'} className="text-[9px] uppercase">
+                        <Badge variant={dsrExcluded ? 'secondary' : 'destructive'} className="text-[11px] uppercase">
                           {dsrExcluded ? 'DSR 제외' : 'DSR 포함'}
                         </Badge>
                       )}
