@@ -7,6 +7,8 @@ import {
   ChartContainer,
   ChartTooltip,
   ChartTooltipContent,
+  ChartLegend,
+  ChartLegendContent,
   type ChartConfig,
 } from '@/components/ui/chart';
 
@@ -53,6 +55,10 @@ const Charts: React.FC<Props> = ({ assets, groupBy = 'category' }) => {
     return data.reduce((acc, curr) => acc + curr.value, 0);
   }, [data]);
 
+  const sanitizeKey = (key: string): string => {
+    return key.replace(/[^a-zA-Z0-9]/g, '_');
+  };
+
   const chartConfig = React.useMemo(() => {
     const config: ChartConfig = {
       value: {
@@ -62,7 +68,8 @@ const Charts: React.FC<Props> = ({ assets, groupBy = 'category' }) => {
 
     data.forEach((item, index) => {
       const colors = ['#3b82f6', '#10b981', '#f59e0b', '#6366f1', '#ec4899', '#f43f5e', '#8b5cf6', '#06b6d4'];
-      config[item.name] = {
+      const sanitizedKey = sanitizeKey(item.name);
+      config[sanitizedKey] = {
         label: formatLabel(item.name),
         color: colors[index % colors.length],
       };
@@ -72,11 +79,15 @@ const Charts: React.FC<Props> = ({ assets, groupBy = 'category' }) => {
   }, [data]);
 
   const chartData = React.useMemo(() => {
-    return data.map((item) => ({
-      name: item.name,
-      value: item.value,
-      fill: `var(--color-${item.name})`,
-    }));
+    return data.map((item) => {
+      const sanitizedKey = sanitizeKey(item.name);
+      return {
+        name: item.name,
+        value: item.value,
+        fill: `var(--color-${sanitizedKey})`,
+        chartKey: sanitizedKey,
+      };
+    });
   }, [data]);
 
   const formatCurrency = (value: number) => {
@@ -86,7 +97,7 @@ const Charts: React.FC<Props> = ({ assets, groupBy = 'category' }) => {
   return (
     <ChartContainer
       config={chartConfig}
-      className="mx-auto aspect-square max-h-[250px]"
+      className="mx-auto aspect-square w-[250px] h-[250px]"
     >
       <PieChart>
         <ChartTooltip
@@ -95,19 +106,30 @@ const Charts: React.FC<Props> = ({ assets, groupBy = 'category' }) => {
             if (!props.active || !props.payload || props.payload.length === 0) {
               return null;
             }
-            const formattedPayload = props.payload.map((item) => ({
-              name: item.name as string | undefined,
-              value: typeof item.value === 'number' ? formatCurrency(item.value) : String(item.value ?? ''),
-              payload: item.payload,
-              dataKey: item.dataKey as string | undefined,
-              color: item.color,
-            }));
+            const formattedPayload = props.payload.map((item) => {
+              const itemName = item.name as string | undefined;
+              const sanitizedKey = itemName ? sanitizeKey(itemName) : undefined;
+              const itemConfig = sanitizedKey ? chartConfig[sanitizedKey] : undefined;
+              const color = sanitizedKey && itemConfig?.color ? `var(--color-${sanitizedKey})` : item.color;
+
+              return {
+                name: itemName,
+                value: typeof item.value === 'number' ? formatCurrency(item.value) : String(item.value ?? ''),
+                payload: {
+                  ...item.payload,
+                  chartKey: sanitizedKey,
+                },
+                dataKey: item.dataKey as string | undefined,
+                color: color,
+              };
+            });
             return (
               <ChartTooltipContent
                 active={props.active}
                 payload={formattedPayload}
                 label={typeof props.label === 'string' ? props.label : undefined}
                 hideLabel
+                nameKey="chartKey"
               />
             );
           }}
@@ -125,24 +147,26 @@ const Charts: React.FC<Props> = ({ assets, groupBy = 'category' }) => {
           <Label
             content={({ viewBox }) => {
               if (viewBox && 'cx' in viewBox && 'cy' in viewBox) {
+                const cx = viewBox.cx as number;
+                const cy = viewBox.cy as number;
                 return (
                   <text
-                    x={viewBox.cx}
-                    y={viewBox.cy}
+                    x={cx}
+                    y={cy}
                     textAnchor="middle"
-                    dominantBaseline="middle"
+                    dominantBaseline="central"
                   >
                     <tspan
-                      x={viewBox.cx}
-                      y={viewBox.cy}
-                      className="fill-foreground text-3xl font-bold"
+                      x={cx}
+                      dy="-0.5em"
+                      className="fill-foreground text-lg font-bold"
                     >
                       {formatCurrency(totalValue)}
                     </tspan>
                     <tspan
-                      x={viewBox.cx}
-                      y={(viewBox.cy || 0) + 24}
-                      className="fill-muted-foreground"
+                      x={cx}
+                      dy="1.2em"
+                      className="fill-muted-foreground text-sm"
                     >
                       총 자산
                     </tspan>
@@ -153,6 +177,32 @@ const Charts: React.FC<Props> = ({ assets, groupBy = 'category' }) => {
             }}
           />
         </Pie>
+        <ChartLegend
+          className="-translate-y-2 flex-wrap gap-2 *:basis-1/4 *:justify-center"
+          content={(props) => {
+            if (!props.payload || props.payload.length === 0) {
+              return null;
+            }
+            const formattedPayload = props.payload.map((item) => {
+              const itemPayload = item.payload as { chartKey?: string; name?: string } | undefined;
+              const chartKey = itemPayload?.chartKey || (item.value ? sanitizeKey(String(item.value)) : undefined);
+              return {
+                ...item,
+                value: chartKey,
+                payload: {
+                  ...item.payload,
+                  originalName: itemPayload?.name || item.value,
+                },
+              };
+            });
+            return (
+              <ChartLegendContent
+                payload={formattedPayload}
+                nameKey="value"
+              />
+            );
+          }}
+        />
       </PieChart>
     </ChartContainer>
   );

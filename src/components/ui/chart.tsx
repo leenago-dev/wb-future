@@ -75,26 +75,26 @@ const ChartStyle = ({ id, config }: { id: string; config: ChartConfig }) => {
       dangerouslySetInnerHTML={{
         __html: `[data-chart=${id}] {
 ${Object.entries(config)
-  .filter(([_, config]) => config.theme || config.color)
-  .map(([key, itemConfig]) => {
-    if (itemConfig.color) {
-      return `  --color-${key}: ${itemConfig.color};`
-    }
-    if (itemConfig.theme) {
-      return `  --color-${key}: hsl(var(--chart-${key}));`
-    }
-    return ''
-  })
-  .filter(Boolean)
-  .join('\n')}
+            .filter(([_, config]) => config.theme || config.color)
+            .map(([key, itemConfig]) => {
+              if (itemConfig.color) {
+                return `  --color-${key}: ${itemConfig.color};`
+              }
+              if (itemConfig.theme) {
+                return `  --color-${key}: hsl(var(--chart-${key}));`
+              }
+              return ''
+            })
+            .filter(Boolean)
+            .join('\n')}
 }`
       }}
     />
   )
 }
 
-const ChartTooltip = ({ children, ...props }: React.ComponentProps<typeof Tooltip>) => {
-  return <Tooltip {...props}>{children}</Tooltip>
+const ChartTooltip = (props: React.ComponentProps<typeof Tooltip>) => {
+  return <Tooltip {...props} />
 }
 ChartTooltip.displayName = "ChartTooltip"
 
@@ -247,7 +247,7 @@ const ChartLegendContent = React.forwardRef<
                 backgroundColor: indicatorColor,
               }}
             />
-            <span className="text-muted-foreground text-xs">
+            <span className="text-muted-foreground text-xs whitespace-nowrap">
               {itemConfig?.label || item.value}
             </span>
           </div>

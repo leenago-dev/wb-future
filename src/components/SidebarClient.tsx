@@ -31,7 +31,15 @@ function SidebarLayout({ children }: { children: React.ReactNode }) {
   };
 
   const handleViewChange = (view: ViewType) => {
-    router.push(routes[view]);
+    const targetRoute = routes[view];
+    if (pathname === targetRoute) {
+      return;
+    }
+    try {
+      router.push(targetRoute);
+    } catch (error) {
+      console.error('Navigation error:', error);
+    }
   };
 
   return (
