@@ -1,0 +1,119 @@
+---
+alwaysApply: true
+---
+
+# No ESLint Disable Rule
+
+## Strict Policy
+
+**NEVER use eslint-disable comments.** This includes:
+
+- `// eslint-disable-next-line`
+- `// eslint-disable-line`
+- `/* eslint-disable */`
+- `/* eslint-disable-next-line */`
+- `// @ts-ignore`
+- `// @ts-nocheck`
+- `// @ts-expect-error` (unless absolutely justified)
+
+## Proper Solutions
+
+### 1. Unused Variables Warning (`no-unused-vars`)
+
+❌ **Wrong approach:**
+
+```typescript
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+const [ruleInfo, setRuleInfo] = useState(null)
+```
+
+✅ **Correct approach:**
+
+- Actually use the variable
+- Remove it if unnecessary
+- Use underscore prefix (depending on config): `const [_ruleInfo, setRuleInfo] = useState(null)`
+
+### 2. Any Type Warning (`no-explicit-any`)
+
+❌ **Wrong approach:**
+
+```typescript
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const data: any = fetchData()
+```
+
+✅ **Correct approach:**
+
+```typescript
+// Define proper types
+interface DataType {
+  // ...
+}
+const data: DataType = fetchData()
+
+// Or use unknown with type guards
+const data: unknown = fetchData()
+if (isValidData(data)) {
+  // use data safely
+}
+```
+
+### 3. Empty Function Warning (`no-empty-function`)
+
+❌ **Wrong approach:**
+
+```typescript
+// eslint-disable-next-line @typescript-eslint/no-empty-function
+const noop = () => {}
+```
+
+✅ **Correct approach:**
+
+```typescript
+const noop = () => {
+  // Intentionally empty
+  return undefined
+}
+```
+
+### 4. Use Type Guards Instead of Type Assertions
+
+❌ **Wrong approach:**
+
+```typescript
+// @ts-ignore
+const element = document.getElementById("id") as HTMLInputElement
+```
+
+✅ **Correct approach:**
+
+```typescript
+const element = document.getElementById("id")
+if (element instanceof HTMLInputElement) {
+  // Use element safely as HTMLInputElement
+}
+```
+
+## Handling Edge Cases
+
+If you encounter a situation that seems unavoidable:
+
+1. **Refactor the code** to solve the root problem
+2. **Improve type definitions** to ensure type safety
+3. **Consider modifying config** (adjust specific rules in `.eslintrc`)
+4. **Use better patterns**:
+   - Optional chaining (`?.`)
+   - Nullish coalescing (`??`)
+   - Type guards
+   - Proper type definitions
+
+## Code Quality Principles
+
+1. **ESLint warnings are signals of code quality issues** - Don't ignore them, fix them
+2. **Prioritize type safety** - Leverage TypeScript's full potential
+3. **Write explicit and clear code** - Express intent through code, not by suppressing warnings
+4. **Don't create technical debt** - eslint-disable increases future bug potential
+
+## Scope
+
+This rule applies to all TypeScript, JavaScript, TSX, and JSX files in the project.

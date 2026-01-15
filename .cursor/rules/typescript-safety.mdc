@@ -1,0 +1,357 @@
+---
+globs: *.ts,*.tsx
+description: "TypeScript 타입 안전성 및 any 타입 방지"
+---
+
+# 🔒 TypeScript 타입 안전성
+
+## 핵심 원칙
+
+**`any` 타입은 절대 금지. 항상 명시적이고 안전한 타입을 사용한다.**
+
+---
+
+## 🚫 절대 금지 패턴
+
+### ❌ any 타입 사용 금지
+
+```typescript
+// ❌ 금지: 함수 파라미터
+function processData(data: any) {}
+
+// ❌ 금지: 함수 반환 타입
+function getData(): any {}
+
+// ❌ 금지: 객체 속성
+interface Config {
+  settings: any
+}
+
+// ❌ 금지: 배열 타입
+const items: any[] = []
+
+// ❌ 금지: 타입 단언
+const result = response as any
+```
+
+---
+
+## ✅ 필수 대안
+
+### 1. unknown 타입 + 타입 가드
+
+```typescript
+// ✅ 올바름: unknown 사용
+function processData(data: unknown) {
+  if (typeof data === "object" && data !== null) {
+    // 타입 가드로 안전하게 처리
+  }
+}
+
+// ✅ 올바름: 타입 가드 함수
+function isUser(value: unknown): value is User {
+  return (
+    typeof value === "object" &&
+    value !== null &&
+    "id" in value &&
+    "name" in value
+  )
+}
+
+// 사용
+if (isUser(data)) {
+  console.log(data.name) // 타입 안전
+}
+```
+
+### 2. 명시적 타입 정의
+
+```typescript
+// ✅ 올바름: 인터페이스 정의
+interface User {
+  id: string
+  name: string
+  email?: string
+}
+
+// ✅ 올바름: 유니온 타입
+type Status = "loading" | "success" | "error"
+
+// ✅ 올바름: 제네릭
+interface ApiResponse<T> {
+  data: T
+  success: boolean
+  error?: string
+}
+```
+
+### 3. Zod로 런타임 검증
+
+```typescript
+// ✅ 올바름: Zod 스키마
+import { z } from "zod"
+
+const UserSchema = z.object({
+  id: z.string(),
+  name: z.string(),
+  email: z.string().email().optional(),
+})
+
+type User = z.infer<typeof UserSchema>
+
+// 사용
+const result = UserSchema.safeParse(apiData)
+if (result.success) {
+  const user: User = result.data // 타입 안전
+}
+```
+
+### 4. Record 타입
+
+```typescript
+// ✅ 올바름: 키-값 객체
+const config: Record<string, string> = {}
+
+// ✅ 올바름: 부분적으로 알려진 구조
+const metadata: Record<string, unknown> = {
+  customField1: "value",
+  customField2: 123,
+}
+```
+
+---
+
+## 📋 일반적인 시나리오 해결
+
+### API 응답 처리
+
+```typescript
+// ❌ 잘못됨
+const response: any = await fetch("/api/data")
+
+// ✅ 올바름: Zod 검증
+const ResponseSchema = z.object({
+  success: z.boolean(),
+  data: z.unknown(),
+})
+
+const json = await fetch("/api/data").then((r) => r.json())
+const response = ResponseSchema.parse(json)
+```
+
+### 이벤트 핸들러
+
+```typescript
+// ❌ 잘못됨
+const handleChange = (event: any) => {}
+
+// ✅ 올바름: 명시적 이벤트 타입
+const handleChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+  console.log(event.target.value)
+}
+```
+
+### 에러 처리
+
+```typescript
+// ❌ 잘못됨
+catch (error: any) {
+  console.error(error.message)
+}
+
+// ✅ 올바름: unknown + 타입 가드
+catch (error: unknown) {
+  if (error instanceof Error) {
+    console.error(error.message)
+  } else {
+    console.error("알 수 없는 에러:", error)
+  }
+}
+```
+
+### 외부 라이브러리 데이터
+
+```typescript
+// ❌ 잘못됨
+const libraryResult: any = complexLibrary.getData()
+
+// ✅ 올바름: 사용하는 부분만 인터페이스 정의
+interface LibraryResult {
+  id: string
+  data: unknown // 별도로 검증
+}
+
+const libraryResult = complexLibrary.getData() as LibraryResult
+
+// data 필드는 별도 검증
+if (typeof libraryResult.data === "object") {
+  // 안전하게 처리
+}
+```
+
+---
+
+## 🎯 제네릭 활용
+
+```typescript
+// ✅ 제네릭으로 재사용성 확보
+interface ApiResponse<TData, TError = never> {
+  data: TData
+  error?: TError
+}
+
+// ✅ 제약 조건 추가
+function pick<T extends object, K extends keyof T>(
+  obj: T,
+  keys: readonly K[]
+): Pick<T, K> {
+  const result = {} as Pick<T, K>
+  keys.forEach((key) => {
+    result[key] = obj[key]
+  })
+  return result
+}
+
+// ✅ 의미있는 제네릭 이름
+function transformArray<TInput, TOutput>(
+  items: TInput[],
+  transformer: (item: TInput) => TOutput
+): TOutput[] {
+  return items.map(transformer)
+}
+```
+
+---
+
+## 🔍 Discriminated Union (태그된 유니온)
+
+```typescript
+// ✅ 상태를 태그 필드로 구분
+type LoadState =
+  | { status: "idle" }
+  | { status: "loading" }
+  | { status: "success"; data: User }
+  | { status: "error"; message: string }
+
+function handleState(state: LoadState) {
+  switch (state.status) {
+    case "idle":
+      return <div>대기 중</div>
+    case "loading":
+      return <Spinner />
+    case "success":
+      return <UserProfile user={state.data} />
+    case "error":
+      return <ErrorMessage message={state.message} />
+    default:
+      // Exhaustiveness check
+      const _exhaustive: never = state
+      return _exhaustive
+  }
+}
+```
+
+---
+
+## 📏 인터페이스 준수 규칙
+
+### 반드시 인터페이스 확인 후 접근
+
+```typescript
+// ❌ 잘못됨: 인터페이스 확인 없이 접근
+function extractRoute(response: CancellationFeeResponse) {
+  return response.trip_info.segments.map((s) => s.route)
+  // 에러: segments 속성이 존재하지 않음
+}
+
+// ✅ 올바름: 인터페이스 확인 후 실제 속성 사용
+function extractRoute(response: CancellationFeeResponse) {
+  const journey = response.journey || []
+  return journey.map((segment) => {
+    return segment.flight_info?.route_summary?.join(" → ") || "Unknown"
+  })
+}
+```
+
+### 옵셔널 체이닝 사용
+
+```typescript
+// ✅ 안전한 중첩 속성 접근
+const routeSummary = segment.flight_info?.route_summary?.join(" → ")
+
+// ✅ null/undefined 기본값 처리
+const tripType = data.trip_info?.trip_type ?? "OW"
+
+// ✅ 배열 안전 접근
+const firstSegment = journey?.[0]
+```
+
+---
+
+## ✅ 커밋 전 체크리스트
+
+- [ ] `any` 타입 사용 없음 (`grep -r "any" src/` 확인)
+- [ ] 모든 함수 파라미터에 명시적 타입
+- [ ] `unknown` 사용 시 타입 가드 존재
+- [ ] 타입 단언은 안전하고 명시적
+- [ ] 외부 데이터는 Zod로 검증
+- [ ] 옵셔널 체이닝 사용 (`?.`)
+- [ ] null/undefined에 대한 기본값 처리
+
+---
+
+## 🧪 타입 안전성 검증
+
+```bash
+# 타입 체크 실행
+pnpm run type-check
+
+# Lint 실행
+pnpm run lint
+
+# any 사용 검색
+grep -r ": any" src/
+grep -r "as any" src/
+```
+
+---
+
+## 🎓 핵심 원칙 요약
+
+1. **any 절대 금지** - unknown + 타입 가드 사용
+2. **명시적 타입** - 모든 변수와 함수에 타입 지정
+3. **Zod 검증** - 외부 데이터는 런타임 검증
+4. **타입 가드** - unknown 데이터는 안전하게 좁히기
+5. **인터페이스 준수** - 항상 실제 인터페이스 확인 후 접근
+
+**명언**: "any를 사용하는 순간, TypeScript를 JavaScript로 바꾸는 것이다."
+
+---
+
+## 🚨 긴급 상황 프로토콜
+
+외부 라이브러리 타입이 복잡한 경우:
+
+1. **1순위**: 라이브러리 타입 정의 확인
+2. **2순위**: 사용하는 부분만 인터페이스 작성
+3. **3순위**: unknown + 타입 가드 사용
+4. **최후**: any + 상세한 주석 + TODO 태그
+
+```typescript
+// 최후의 수단 (피할 것)
+// TODO: external-lib v2.0에서 타입 정의 개선 예정
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const temp: any = externalLib.complexMethod()
+```
+
+---
+
+## 📊 성공 지표
+
+- ✅ 프로덕션 코드에서 any 타입 0개
+- ✅ IntelliSense 100% 커버리지
+- ✅ 런타임 타입 에러 감소
+- ✅ 개발자 경험 향상
+- ✅ 코드 유지보수성 개선
+
+**약속**: any 타입을 사용하지 않고 항상 체계적인 타입 안전성 프로세스를 따른다.
