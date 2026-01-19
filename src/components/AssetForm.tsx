@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { X } from 'lucide-react';
 import { AssetCategory, Asset, AssetOwner, LoanType, RepaymentType } from '@/types';
-import { quoteCache } from '@/services/quoteCache';
+import { getStockName, getStockCountry, getStockCurrency } from '@/lib/api';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -12,6 +12,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { OWNER_FORM_OPTIONS, OWNER_LABELS, DEFAULT_OWNER, COUNTRIES, LOAN_TYPES, REPAYMENT_TYPES } from '@/config/app';
+import { supabase } from '@/lib/supabase';
 
 interface Props {
   onSave: (asset: Omit<Asset, 'id' | 'updated_at' | 'user_id' | 'created_at'>) => void;
@@ -32,17 +33,7 @@ const COUNTRY_CATEGORIES = [
   AssetCategory.STOCK,
 ] as const;
 
-const currencyToCountry = (currency?: string): string => {
-  if (!currency) return '한국';
 
-  const currencyUpper = currency.toUpperCase();
-  if (currencyUpper === 'KRW') return '한국';
-  if (currencyUpper === 'USD') return '미국';
-  if (currencyUpper === 'CNY' || currencyUpper === 'CNH') return '중국';
-  if (currencyUpper === 'JPY') return '일본';
-
-  return '기타';
-};
 
 const isTickerCategory = (category: AssetCategory): boolean => {
   return TICKER_CATEGORIES.includes(category as typeof TICKER_CATEGORIES[number]);
@@ -87,6 +78,7 @@ interface TextInputProps<T extends string | number = string | number> {
   className?: string;
   transform?: (value: string) => string;
   autoFocus?: boolean;
+  readOnly?: boolean;
 }
 
 const TextInput = <T extends string | number = string | number>({
@@ -99,6 +91,7 @@ const TextInput = <T extends string | number = string | number>({
   className = '',
   transform,
   autoFocus,
+  readOnly,
 }: TextInputProps<T>) => {
   const getInitialValue = (): string => {
     if (type === 'number') {
@@ -209,6 +202,7 @@ const TextInput = <T extends string | number = string | number>({
       placeholder={placeholder}
       className={className}
       autoFocus={autoFocus}
+      readOnly={readOnly}
       inputMode={type === 'number' ? 'numeric' : undefined}
     />
   );
@@ -224,6 +218,7 @@ const AssetForm: React.FC<Props> = ({ onSave, onClose, initialData }) => {
   const [ticker, setTicker] = useState(safeMetadata.ticker || '');
   const [avgPrice, setAvgPrice] = useState(safeMetadata.avg_price || 0);
   const [country, setCountry] = useState(safeMetadata.country || '한국');
+  const [currency, setCurrency] = useState(safeMetadata.currency || 'KRW');
   const [address, setAddress] = useState(safeMetadata.address || '');
   const [purchasePrice, setPurchasePrice] = useState(safeMetadata.purchase_price || 0);
 
@@ -249,19 +244,13 @@ const AssetForm: React.FC<Props> = ({ onSave, onClose, initialData }) => {
       const tickerAtFetchStart = ticker.trim();
       setIsFetchingName(true);
       try {
-        const data = await quoteCache.getQuote(tickerAtFetchStart);
+        const data = await getStockName(tickerAtFetchStart);
         const tickerStillMatches = tickerAtFetchStart === ticker.trim();
-        if (data.name && tickerStillMatches && !nameFetchedRef.current) {
+        if (data && data.name && tickerStillMatches && !nameFetchedRef.current) {
           setName(data.name);
           nameFetchedRef.current = true;
-        } else if (data.name && tickerStillMatches && nameFetchedRef.current && (!name || name.trim().length === 0)) {
+        } else if (data && data.name && tickerStillMatches && nameFetchedRef.current && (!name || name.trim().length === 0)) {
           setName(data.name);
-        }
-        if (tickerStillMatches && data.currency) {
-          const newCountry = currencyToCountry(data.currency);
-          if (newCountry !== country) {
-            setCountry(newCountry);
-          }
         }
       } catch (error) {
         // 에러는 조용히 무시
@@ -271,7 +260,61 @@ const AssetForm: React.FC<Props> = ({ onSave, onClose, initialData }) => {
     }, 800);
 
     return () => clearTimeout(timeoutId);
-  }, [ticker, category, name, country]);
+  }, [ticker, category, name]);
+
+  // 티커가 변경되면 자동으로 국가 가져오기 (주식/퇴직연금만)
+  useEffect(() => {
+    const shouldFetchCountry =
+      isCountryCategory(category) &&
+      ticker.trim().length > 0;
+
+    if (!shouldFetchCountry) return;
+
+    const timeoutId = setTimeout(async () => {
+      const tickerAtFetchStart = ticker.trim();
+      try {
+        const data = await getStockCountry(tickerAtFetchStart);
+        const tickerStillMatches = tickerAtFetchStart === ticker.trim();
+        if (data && tickerStillMatches && data.country) {
+          const newCountry = data.country;
+          if (newCountry !== country) {
+            setCountry(newCountry);
+          }
+        }
+      } catch (error) {
+        // 에러는 조용히 무시
+      }
+    }, 800);
+
+    return () => clearTimeout(timeoutId);
+  }, [ticker, category, country]);
+
+  // 티커가 변경되면 자동으로 통화 가져오기 (주식/퇴직연금만)
+  useEffect(() => {
+    const shouldFetchCurrency =
+      isCountryCategory(category) &&
+      ticker.trim().length > 0;
+
+    if (!shouldFetchCurrency) return;
+
+    const timeoutId = setTimeout(async () => {
+      const tickerAtFetchStart = ticker.trim();
+      try {
+        const data = await getStockCurrency(tickerAtFetchStart);
+        const tickerStillMatches = tickerAtFetchStart === ticker.trim();
+        if (data && tickerStillMatches && data.currency) {
+          const newCurrency = data.currency;
+          if (newCurrency !== currency) {
+            setCurrency(newCurrency);
+          }
+        }
+      } catch (error) {
+        // 에러는 조용히 무시
+      }
+    }, 800);
+
+    return () => clearTimeout(timeoutId);
+  }, [ticker, category, currency]);
 
   const handleNameChange = (newName: string) => {
     setName(newName);
@@ -307,6 +350,7 @@ const AssetForm: React.FC<Props> = ({ onSave, onClose, initialData }) => {
 
     if (isCountryCategory(category)) {
       baseMetadata.country = country;
+      baseMetadata.currency = currency;
     }
 
     if (category === AssetCategory.REAL_ESTATE) {
@@ -325,8 +369,60 @@ const AssetForm: React.FC<Props> = ({ onSave, onClose, initialData }) => {
     return baseMetadata;
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const saveTickerToManagedStocks = async () => {
+    const trimmedTicker = ticker.trim();
+
+    // 티커가 없거나 티커 카테고리가 아니면 저장하지 않음
+    if (!trimmedTicker || !isTickerCategory(category)) {
+      return;
+    }
+
+    try {
+      // 국가가 'KR' 또는 '한국'인 경우 티커 뒤에 '.KS' 추가 (이미 붙어있지 않은 경우만)
+      let symbolToSave = trimmedTicker;
+      if ((country === 'KR' || country === '한국') && !trimmedTicker.endsWith('.KS')) {
+        symbolToSave = `${trimmedTicker}.KS`;
+      }
+
+      // symbol 기준으로 중복 체크
+      const { data: existingStock, error: selectError } = await supabase
+        .from('managed_stocks')
+        .select('id')
+        .eq('symbol', symbolToSave)
+        .maybeSingle();
+
+      if (selectError) {
+        console.error('티커 조회 오류:', selectError);
+        return;
+      }
+
+      // id가 있으면 업데이트하지 않고, 없으면 새로 추가
+      if (!existingStock) {
+        const { error: insertError } = await supabase
+          .from('managed_stocks')
+          .insert({
+            symbol: symbolToSave,
+            name: name.trim() || undefined,
+            enabled: true,
+            country: country || undefined,
+            currency: currency || undefined,
+          });
+
+        if (insertError) {
+          console.error('티커 저장 오류:', insertError);
+        }
+      }
+    } catch (error) {
+      console.error('티커 저장 중 오류 발생:', error);
+    }
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    // 티커 저장 (비동기로 실행하되, 완료를 기다리지 않음)
+    await saveTickerToManagedStocks();
+
     onSave({
       category,
       owner,
@@ -432,18 +528,26 @@ const AssetForm: React.FC<Props> = ({ onSave, onClose, initialData }) => {
               </div>
 
               {isCountryCategory(category) && (
-                <FormField label="국가">
-                  <Select value={country} onValueChange={setCountry}>
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {COUNTRIES.map((c) => (
-                        <SelectItem key={c} value={c}>{c}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </FormField>
+                <div className={GRID_LAYOUT_CLASSES}>
+                  <FormField label="통화">
+                    <TextInput
+                      value={currency}
+                      onChange={setCurrency}
+                      placeholder="티커 입력 시 자동 조회됩니다."
+                      readOnly
+                      className="bg-muted cursor-not-allowed"
+                    />
+                  </FormField>
+                  <FormField label="국가">
+                    <TextInput
+                      value={country}
+                      onChange={setCountry}
+                      placeholder="티커 입력 시 자동 조회됩니다."
+                      readOnly
+                      className="bg-muted cursor-not-allowed"
+                    />
+                  </FormField>
+                </div>
               )}
             </>
           )}
