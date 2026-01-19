@@ -29,7 +29,7 @@ export const USER = {
 
 // 환율 API 설정
 export const EXCHANGE_RATE_API = {
-  SYMBOL: 'USDKRW=X', // Yahoo Finance 환율 티커
+  SYMBOL: 'USDKRW=X', // USD/KRW 환율 티커
   PAIR: 'USDKRW', // 환율 페어 코드
 } as const;
 
