@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { X } from 'lucide-react';
 import { AssetCategory, Asset, AssetOwner, LoanType, RepaymentType } from '@/types';
-import { getStockName, getStockCountry, getStockCurrency } from '@/lib/api';
+import { getStockName, getStockCountry } from '@/lib/api';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -41,6 +41,20 @@ const isTickerCategory = (category: AssetCategory): boolean => {
 
 const isCountryCategory = (category: AssetCategory): boolean => {
   return COUNTRY_CATEGORIES.includes(category as typeof COUNTRY_CATEGORIES[number]);
+};
+
+// 국가 코드 기반 통화 매핑 (Fallback용)
+const DEFAULT_CURRENCY_MAP: Record<string, string> = {
+  'KR': 'KRW',
+  '한국': 'KRW',
+  'US': 'USD',
+  '미국': 'USD',
+  'CN': 'CNY',
+  'CNH': 'CNY',
+  '중국': 'CNY',
+  'JP': 'JPY',
+  '일본': 'JPY',
+  '기타': 'USD',
 };
 
 interface FormFieldProps {
@@ -262,48 +276,33 @@ const AssetForm: React.FC<Props> = ({ onSave, onClose, initialData }) => {
     return () => clearTimeout(timeoutId);
   }, [ticker, category, name]);
 
-  // 티커가 변경되면 자동으로 국가 가져오기 (주식/퇴직연금만)
+  // 티커가 변경되면 자동으로 국가와 통화 가져오기 (주식/퇴직연금만) - 최적화된 하이브리드 방식
   useEffect(() => {
-    const shouldFetchCountry =
+    const shouldFetch =
       isCountryCategory(category) &&
       ticker.trim().length > 0;
 
-    if (!shouldFetchCountry) return;
+    if (!shouldFetch) return;
 
     const timeoutId = setTimeout(async () => {
       const tickerAtFetchStart = ticker.trim();
       try {
-        const data = await getStockCountry(tickerAtFetchStart);
+        // Supabase stock_names 테이블에서 국가와 통화를 한 번에 조회
+        const { data, error } = await supabase
+          .from('stock_names')
+          .select('country, currency')
+          .eq('symbol', tickerAtFetchStart)
+          .maybeSingle();
+
         const tickerStillMatches = tickerAtFetchStart === ticker.trim();
-        if (data && tickerStillMatches && data.country) {
-          const newCountry = data.country;
-          if (newCountry !== country) {
-            setCountry(newCountry);
+        if (!error && data && tickerStillMatches) {
+          // 국가 설정
+          if (data.country && data.country !== country) {
+            setCountry(data.country);
           }
-        }
-      } catch (error) {
-        // 에러는 조용히 무시
-      }
-    }, 800);
 
-    return () => clearTimeout(timeoutId);
-  }, [ticker, category, country]);
-
-  // 티커가 변경되면 자동으로 통화 가져오기 (주식/퇴직연금만)
-  useEffect(() => {
-    const shouldFetchCurrency =
-      isCountryCategory(category) &&
-      ticker.trim().length > 0;
-
-    if (!shouldFetchCurrency) return;
-
-    const timeoutId = setTimeout(async () => {
-      const tickerAtFetchStart = ticker.trim();
-      try {
-        const data = await getStockCurrency(tickerAtFetchStart);
-        const tickerStillMatches = tickerAtFetchStart === ticker.trim();
-        if (data && tickerStillMatches && data.currency) {
-          const newCurrency = data.currency;
+          // 통화 설정 (DB에 없으면 국가 기반 fallback)
+          const newCurrency = data.currency || DEFAULT_CURRENCY_MAP[data.country] || 'USD';
           if (newCurrency !== currency) {
             setCurrency(newCurrency);
           }
@@ -314,7 +313,7 @@ const AssetForm: React.FC<Props> = ({ onSave, onClose, initialData }) => {
     }, 800);
 
     return () => clearTimeout(timeoutId);
-  }, [ticker, category, currency]);
+  }, [ticker, category, country, currency]);
 
   const handleNameChange = (newName: string) => {
     setName(newName);
