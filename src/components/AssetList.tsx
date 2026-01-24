@@ -26,15 +26,18 @@ const AssetList: React.FC<Props> = ({ assets, onEdit, onDelete, exchangeRate = E
 
   const calculateValue = (asset: Asset) => {
     if (asset.category === AssetCategory.STOCK || asset.category === AssetCategory.PENSION || asset.category === AssetCategory.VIRTUAL_ASSET) {
-      return (asset.current_price || asset.metadata.avg_price || 0) * asset.amount;
+      // current_price가 없으면 avg_price를 사용 (수익률 계산을 위해)
+      const price = asset.current_price ?? asset.metadata.avg_price ?? 0;
+      return price * asset.amount;
     }
     return asset.amount;
   };
 
   const getProfit = (asset: Asset) => {
     if (asset.category === AssetCategory.STOCK || asset.category === AssetCategory.PENSION || asset.category === AssetCategory.VIRTUAL_ASSET) {
-      const current = asset.current_price || 0;
-      const avg = asset.metadata.avg_price || 0;
+      // current_price가 없으면 avg_price를 사용 (수익률 0%로 표시)
+      const current = asset.current_price ?? asset.metadata.avg_price ?? 0;
+      const avg = asset.metadata.avg_price ?? 0;
       if (avg === 0) return 0;
       return ((current - avg) / avg) * 100;
     }

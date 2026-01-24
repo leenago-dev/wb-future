@@ -54,11 +54,67 @@ export async function GET(request: Request) {
     }
 
     const row = (data?.[0] as StockPriceRow | undefined) ?? undefined;
+
+    // Supabase에 데이터가 없으면 Yahoo Finance API 직접 호출
     if (!row) {
-      return NextResponse.json(
-        { error: '데이터를 가져올 수 없습니다.', symbol: normalizedSymbol },
-        { status: 404 }
-      );
+      console.log(`[Quote API] Supabase에 ${normalizedSymbol} 데이터 없음, Yahoo Finance API 호출`);
+
+      try {
+        const yahooUrl = `https://query1.finance.yahoo.com/v8/finance/chart/${normalizedSymbol}?interval=1d&range=1d`;
+        const yahooResponse = await fetch(yahooUrl, {
+          headers: {
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+          },
+        });
+
+        if (!yahooResponse.ok) {
+          return NextResponse.json(
+            { error: '데이터를 가져올 수 없습니다.', symbol: normalizedSymbol },
+            { status: 404 }
+          );
+        }
+
+        const yahooData = await yahooResponse.json();
+        const result = yahooData?.chart?.result?.[0];
+
+        if (!result) {
+          return NextResponse.json(
+            { error: '데이터를 가져올 수 없습니다.', symbol: normalizedSymbol },
+            { status: 404 }
+          );
+        }
+
+        const meta = result.meta;
+        const price = meta?.regularMarketPrice ?? meta?.previousClose;
+
+        if (!price || !Number.isFinite(price) || price <= 0) {
+          return NextResponse.json(
+            { error: '가격 정보를 찾을 수 없습니다.', symbol: normalizedSymbol },
+            { status: 404 }
+          );
+        }
+
+        const responseData = {
+          symbol: meta?.symbol ?? normalizedSymbol,
+          price,
+          currency: meta?.currency ?? 'USD',
+          name: meta?.longName ?? meta?.shortName ?? undefined,
+          changePercent: undefined, // Yahoo API에서 변동률 계산 가능하면 추가
+        };
+
+        return NextResponse.json(responseData, {
+          status: 200,
+          headers: {
+            'Cache-Control': 'public, s-maxage=300, stale-while-revalidate=60',
+          },
+        });
+      } catch (yahooError) {
+        console.error(`[Quote API] Yahoo Finance API 호출 실패:`, yahooError);
+        return NextResponse.json(
+          { error: '데이터를 가져올 수 없습니다.', symbol: normalizedSymbol },
+          { status: 404 }
+        );
+      }
     }
 
     const price = Number(row.close_price);
