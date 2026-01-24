@@ -33,13 +33,21 @@ export function useAssets(selectedOwner: 'Total' | AssetOwner, currentView: View
     const updatedAssets = await Promise.all(data.map(async (asset) => {
       if ((asset.category === AssetCategory.STOCK || asset.category === AssetCategory.PENSION || asset.category === AssetCategory.VIRTUAL_ASSET) && asset.metadata.ticker) {
         try {
-          const price = await fetchCurrentPrice(asset.metadata.ticker, asset.category);
+          // 한국 주식인 경우 .KS 추가 (이미 붙어있지 않은 경우만)
+          let tickerToFetch = asset.metadata.ticker;
+          if ((asset.metadata.country === 'KR' || asset.metadata.country === '한국') &&
+            !tickerToFetch.endsWith('.KS') &&
+            !tickerToFetch.endsWith('.KQ')) {
+            tickerToFetch = `${tickerToFetch}.KS`;
+          }
+
+          const price = await fetchCurrentPrice(tickerToFetch, asset.category);
 
           // currency 정보 가져오기 (주식/퇴직연금만)
           let currency = asset.currency;
           if (asset.category === AssetCategory.STOCK || asset.category === AssetCategory.PENSION) {
             try {
-              const quote = await quoteCache.getQuote(asset.metadata.ticker);
+              const quote = await quoteCache.getQuote(tickerToFetch);
               currency = quote.currency || currency;
             } catch (e) {
               // currency 조회 실패 시 기존 currency 유지
