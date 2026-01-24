@@ -93,7 +93,7 @@ export default function DashboardContent({ currentView, title }: DashboardConten
             </CardContent>
           </Card>
 
-          {currentView === 'pension' ? (
+          {currentView === 'pension' || currentView === 'stock' || currentView === 'crypto' ? (
             <Card className="p-5 sm:p-6 rounded-3xl hover:border-emerald-100 transition-colors">
               <CardContent className="p-0 flex flex-col justify-between">
                 <div className="flex justify-between items-start">
@@ -156,7 +156,7 @@ export default function DashboardContent({ currentView, title }: DashboardConten
                       <CardTitle className="flex items-center gap-2">🌍 국가별 투자 비중</CardTitle>
                     </CardHeader>
                     <CardContent className="p-0">
-                      <Charts assets={filteredAssets} groupBy="country" />
+                      <Charts assets={filteredAssets} groupBy="country" exchangeRate={exchangeRate} />
                     </CardContent>
                   </Card>
                   <Card className="p-6 rounded-3xl">
@@ -164,7 +164,7 @@ export default function DashboardContent({ currentView, title }: DashboardConten
                       <CardTitle className="flex items-center gap-2">📦 종목별 투자 비중</CardTitle>
                     </CardHeader>
                     <CardContent className="p-0">
-                      <Charts assets={filteredAssets} groupBy="name" />
+                      <Charts assets={filteredAssets} groupBy="name" exchangeRate={exchangeRate} />
                     </CardContent>
                   </Card>
                 </div>
@@ -184,7 +184,7 @@ export default function DashboardContent({ currentView, title }: DashboardConten
                       <CardTitle>Asset Allocation</CardTitle>
                     </CardHeader>
                     <CardContent className="p-0">
-                      <Charts assets={filteredAssets} />
+                      <Charts assets={filteredAssets} exchangeRate={exchangeRate} />
                     </CardContent>
                   </Card>
                 )}
