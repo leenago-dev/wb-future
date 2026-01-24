@@ -65,17 +65,23 @@ export default function DashboardContent({ currentView, title }: DashboardConten
 
       <main className="max-w-6xl mx-auto px-4 sm:px-6 py-6 space-y-6">
         <div className="overflow-x-auto -mx-4 px-4 sm:mx-0 sm:px-0 scrollbar-hide">
-          <div className="flex bg-card p-1 rounded-2xl border shadow-sm w-max sm:w-fit">
-            {OWNER_FILTER_OPTIONS.map((owner) => (
-              <Button
-                key={owner}
-                onClick={() => setSelectedOwner(owner as 'Total' | AssetOwner)}
-                variant={selectedOwner === owner ? 'default' : 'ghost'}
-                className={cn('px-4 sm:px-6 py-1.5 sm:py-2 rounded-xl', selectedOwner === owner && 'shadow-md')}
-              >
-                {OWNER_LABELS[owner]}
-              </Button>
-            ))}
+          <div className="flex items-center gap-4">
+            <div className="flex bg-card p-1 rounded-2xl border shadow-sm w-max sm:w-fit">
+              {OWNER_FILTER_OPTIONS.map((owner) => (
+                <Button
+                  key={owner}
+                  onClick={() => setSelectedOwner(owner as 'Total' | AssetOwner)}
+                  variant={selectedOwner === owner ? 'default' : 'ghost'}
+                  className={cn('px-4 sm:px-6 py-1.5 sm:py-2 rounded-xl', selectedOwner === owner && 'shadow-md')}
+                >
+                  {OWNER_LABELS[owner]}
+                </Button>
+              ))}
+            </div>
+            <div className="flex items-center gap-2 bg-card px-4 py-2 rounded-2xl border shadow-sm">
+              <span className="text-xs text-muted-foreground font-medium">💵 USD/KRW</span>
+              <span className="text-sm font-bold text-foreground">{exchangeRate.toFixed(2)}</span>
+            </div>
           </div>
         </div>
 
@@ -87,7 +93,7 @@ export default function DashboardContent({ currentView, title }: DashboardConten
             </CardContent>
           </Card>
 
-          {currentView === 'pension' ? (
+          {currentView === 'pension' || currentView === 'stock' || currentView === 'crypto' ? (
             <Card className="p-5 sm:p-6 rounded-3xl hover:border-emerald-100 transition-colors">
               <CardContent className="p-0 flex flex-col justify-between">
                 <div className="flex justify-between items-start">
@@ -150,7 +156,7 @@ export default function DashboardContent({ currentView, title }: DashboardConten
                       <CardTitle className="flex items-center gap-2">🌍 국가별 투자 비중</CardTitle>
                     </CardHeader>
                     <CardContent className="p-0">
-                      <Charts assets={filteredAssets} groupBy="country" />
+                      <Charts assets={filteredAssets} groupBy="country" exchangeRate={exchangeRate} />
                     </CardContent>
                   </Card>
                   <Card className="p-6 rounded-3xl">
@@ -158,7 +164,7 @@ export default function DashboardContent({ currentView, title }: DashboardConten
                       <CardTitle className="flex items-center gap-2">📦 종목별 투자 비중</CardTitle>
                     </CardHeader>
                     <CardContent className="p-0">
-                      <Charts assets={filteredAssets} groupBy="name" />
+                      <Charts assets={filteredAssets} groupBy="name" exchangeRate={exchangeRate} />
                     </CardContent>
                   </Card>
                 </div>
@@ -178,7 +184,7 @@ export default function DashboardContent({ currentView, title }: DashboardConten
                       <CardTitle>Asset Allocation</CardTitle>
                     </CardHeader>
                     <CardContent className="p-0">
-                      <Charts assets={filteredAssets} />
+                      <Charts assets={filteredAssets} exchangeRate={exchangeRate} />
                     </CardContent>
                   </Card>
                 )}

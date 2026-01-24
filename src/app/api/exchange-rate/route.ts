@@ -1,30 +1,83 @@
-import YahooFinance from 'yahoo-finance2';
 import { NextResponse } from 'next/server';
 import { EXCHANGE_RATE_API, EXCHANGE_RATE } from '@/config/app';
+import { createClient } from '@supabase/supabase-js';
 
-const yahooFinance = new YahooFinance();
+type ExchangeRateRow = {
+  close_price: string | number;
+};
 
 export async function GET() {
   try {
-    // Next.js fetch의 revalidate 옵션을 사용하여 1시간(3600초) 캐싱
-    // 이 함수는 서버 사이드에서만 실행되므로 fetch를 직접 사용할 수 없음
-    // 대신 Yahoo Finance API를 직접 호출하고, Next.js의 캐싱 헤더를 설정
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+    const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
-    const quote = await yahooFinance.quote(EXCHANGE_RATE_API.SYMBOL);
-    const rate = quote.regularMarketPrice ?? quote.price?.regularMarketPrice;
-
-    if (!rate) {
+    if (!supabaseUrl || !supabaseAnonKey) {
       return NextResponse.json(
         {
-          error: '환율 정보를 찾을 수 없습니다.',
+          rate: EXCHANGE_RATE.DEFAULT_USD_KRW,
+          symbol: EXCHANGE_RATE_API.SYMBOL,
+          timestamp: Date.now(),
+          error: 'Supabase 환경변수가 설정되어 있지 않아 기본 환율 사용',
         },
-        { status: 404 }
+        {
+          status: 200,
+          headers: {
+            'Cache-Control': 'public, s-maxage=300, stale-while-revalidate=60',
+          },
+        }
+      );
+    }
+
+    const supabase = createClient(supabaseUrl, supabaseAnonKey);
+
+    const { data, error } = await supabase
+      .from('exchange_rates')
+      .select('close_price')
+      .eq('symbol', EXCHANGE_RATE_API.SYMBOL)
+      .order('date', { ascending: false })
+      .limit(1);
+
+    if (error) {
+      return NextResponse.json(
+        {
+          rate: EXCHANGE_RATE.DEFAULT_USD_KRW,
+          symbol: EXCHANGE_RATE_API.SYMBOL,
+          timestamp: Date.now(),
+          error: '환율 조회 실패, 기본 환율 사용',
+          details: error.message,
+        },
+        {
+          status: 200,
+          headers: {
+            'Cache-Control': 'public, s-maxage=300, stale-while-revalidate=60',
+          },
+        }
+      );
+    }
+
+    const row = (data?.[0] as ExchangeRateRow | undefined) ?? undefined;
+    const rate = row ? Number(row.close_price) : undefined;
+
+    if (!rate || !Number.isFinite(rate)) {
+      return NextResponse.json(
+        {
+          rate: EXCHANGE_RATE.DEFAULT_USD_KRW,
+          symbol: EXCHANGE_RATE_API.SYMBOL,
+          timestamp: Date.now(),
+          error: '환율 정보를 찾을 수 없어 기본 환율 사용',
+        },
+        {
+          status: 200,
+          headers: {
+            'Cache-Control': 'public, s-maxage=300, stale-while-revalidate=60',
+          },
+        }
       );
     }
 
     return NextResponse.json(
       {
-        rate: Number(rate),
+        rate,
         symbol: EXCHANGE_RATE_API.SYMBOL,
         timestamp: Date.now(),
       },
@@ -59,4 +112,3 @@ export async function GET() {
     );
   }
 }
-

@@ -15,13 +15,22 @@ import {
 interface Props {
   assets: Asset[];
   groupBy?: 'category' | 'country' | 'name';
+  exchangeRate?: number;
 }
 
-const Charts: React.FC<Props> = ({ assets, groupBy = 'category' }) => {
+const Charts: React.FC<Props> = ({ assets, groupBy = 'category', exchangeRate = 1450 }) => {
   const calculateValue = (asset: Asset): number => {
     if (asset.category === AssetCategory.STOCK || asset.category === AssetCategory.PENSION || asset.category === AssetCategory.VIRTUAL_ASSET) {
       const currentPrice = asset.current_price ?? asset.metadata.avg_price ?? 0;
-      return currentPrice * asset.amount;
+      let value = currentPrice * asset.amount;
+
+      // USD 자산인 경우 환율 적용하여 KRW로 변환
+      const isUsdAsset = asset.currency === 'USD' || asset.metadata.country === '미국';
+      if (isUsdAsset && value > 0) {
+        value = value * exchangeRate;
+      }
+
+      return value;
     }
     return asset.amount;
   };
