@@ -65,17 +65,23 @@ export default function DashboardContent({ currentView, title }: DashboardConten
 
       <main className="max-w-6xl mx-auto px-4 sm:px-6 py-6 space-y-6">
         <div className="overflow-x-auto -mx-4 px-4 sm:mx-0 sm:px-0 scrollbar-hide">
-          <div className="flex bg-card p-1 rounded-2xl border shadow-sm w-max sm:w-fit">
-            {OWNER_FILTER_OPTIONS.map((owner) => (
-              <Button
-                key={owner}
-                onClick={() => setSelectedOwner(owner as 'Total' | AssetOwner)}
-                variant={selectedOwner === owner ? 'default' : 'ghost'}
-                className={cn('px-4 sm:px-6 py-1.5 sm:py-2 rounded-xl', selectedOwner === owner && 'shadow-md')}
-              >
-                {OWNER_LABELS[owner]}
-              </Button>
-            ))}
+          <div className="flex items-center gap-4">
+            <div className="flex bg-card p-1 rounded-2xl border shadow-sm w-max sm:w-fit">
+              {OWNER_FILTER_OPTIONS.map((owner) => (
+                <Button
+                  key={owner}
+                  onClick={() => setSelectedOwner(owner as 'Total' | AssetOwner)}
+                  variant={selectedOwner === owner ? 'default' : 'ghost'}
+                  className={cn('px-4 sm:px-6 py-1.5 sm:py-2 rounded-xl', selectedOwner === owner && 'shadow-md')}
+                >
+                  {OWNER_LABELS[owner]}
+                </Button>
+              ))}
+            </div>
+            <div className="flex items-center gap-2 bg-card px-4 py-2 rounded-2xl border shadow-sm">
+              <span className="text-xs text-muted-foreground font-medium">💵 USD/KRW</span>
+              <span className="text-sm font-bold text-foreground">{exchangeRate.toFixed(2)}</span>
+            </div>
           </div>
         </div>
 

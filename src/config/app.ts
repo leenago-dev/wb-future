@@ -18,7 +18,7 @@ export const STORAGE_KEYS = {
   ASSETS: 'wealth_dash_assets',
   PROFILE: 'wealth_dash_profile',
   QUOTE_CACHE: 'wealth-dash-quote-cache',
-  EXCHANGE_RATE_CACHE: 'wealth-dash-exchange-rate-cache',
+  EXCHANGE_RATE_CACHE: 'wealth-dash-exchange-rate-cache-v2', // v2: exchange_rates 테이블 사용
 } as const;
 
 // 사용자 설정
@@ -29,7 +29,7 @@ export const USER = {
 
 // 환율 API 설정
 export const EXCHANGE_RATE_API = {
-  SYMBOL: 'USDKRW=X', // USD/KRW 환율 티커
+  SYMBOL: 'USD/KRW', // exchange_rates 테이블의 환율 심볼
   PAIR: 'USDKRW', // 환율 페어 코드
 } as const;
 

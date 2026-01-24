@@ -68,18 +68,18 @@ class ExchangeRateCache {
   }
 
   private _fetchExchangeRate(): Promise<number> {
-    return fetch(`/api/quote?symbol=${EXCHANGE_RATE_API.SYMBOL}`)
+    return fetch('/api/exchange-rate')
       .then((res) => {
         if (!res.ok) {
           throw new Error('환율 정보를 가져오는 중 오류가 발생했습니다.');
         }
         return res.json();
       })
-      .then((data: { price: number }) => {
-        if (!data || !data.price) {
+      .then((data: { rate: number }) => {
+        if (!data || !data.rate) {
           throw new Error('환율 정보를 찾을 수 없습니다.');
         }
-        return data.price;
+        return data.rate;
       });
   }
 

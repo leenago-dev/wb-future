@@ -31,7 +31,7 @@ export async function GET() {
     const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
     const { data, error } = await supabase
-      .from('stock_prices')
+      .from('exchange_rates')
       .select('close_price')
       .eq('symbol', EXCHANGE_RATE_API.SYMBOL)
       .order('date', { ascending: false })
@@ -112,4 +112,3 @@ export async function GET() {
     );
   }
 }
-
