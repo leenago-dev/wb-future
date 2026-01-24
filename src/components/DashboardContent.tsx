@@ -183,7 +183,7 @@ export default function DashboardContent({ currentView, title }: DashboardConten
                     <CardHeader className="p-0 mb-6">
                       <CardTitle>Asset Allocation</CardTitle>
                     </CardHeader>
-                    <CardContent className="p-0">
+                    <CardContent className="p-0 flex justify-center">
                       <Charts assets={filteredAssets} exchangeRate={exchangeRate} />
                     </CardContent>
                   </Card>
