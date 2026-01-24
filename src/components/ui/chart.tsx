@@ -231,14 +231,14 @@ const ChartLegendContent = React.forwardRef<
       className={cn("flex items-center justify-center gap-4", className)}
       {...props}
     >
-      {payload.map((item) => {
+      {payload.map((item, index) => {
         const key = nameKey ? (item as Record<string, unknown>)[nameKey] as string : item.value
         const itemConfig = key ? config[key] : undefined
         const indicatorColor = item.color || (itemConfig?.color ? `var(--color-${key})` : undefined)
 
         return (
           <div
-            key={item.id || item.value}
+            key={`legend-${index}-${item.id || item.value}`}
             className="flex items-center gap-1.5"
           >
             <div
