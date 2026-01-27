@@ -18,6 +18,7 @@ export interface AssetMetadata {
   avg_price?: number;
   address?: string;
   purchase_price?: number;
+  area_num?: number; // 부동산 면적 (㎡)
   country?: string; // 투자 국가 (한국, 미국, 중국, 일본, 기타 등)
   currency?: string; // 통화 (USD, KRW 등)
   // 대출 전용 필드

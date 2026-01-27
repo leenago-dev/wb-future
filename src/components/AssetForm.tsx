@@ -13,6 +13,8 @@ import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { OWNER_FORM_OPTIONS, OWNER_LABELS, DEFAULT_OWNER, COUNTRIES, LOAN_TYPES, REPAYMENT_TYPES } from '@/config/app';
 import { supabase } from '@/lib/supabase';
+import { useRegionDropdown } from '@/hooks/useRegionDropdown';
+import { useApartmentSearch } from '@/hooks/useApartmentSearch';
 
 interface Props {
   onSave: (asset: Omit<Asset, 'id' | 'updated_at' | 'user_id' | 'created_at'>) => void;
@@ -235,6 +237,7 @@ const AssetForm: React.FC<Props> = ({ onSave, onClose, initialData }) => {
   const [currency, setCurrency] = useState(safeMetadata.currency || 'KRW');
   const [address, setAddress] = useState(safeMetadata.address || '');
   const [purchasePrice, setPurchasePrice] = useState(safeMetadata.purchase_price || 0);
+  const [selectedAreaNum, setSelectedAreaNum] = useState<number | undefined>(safeMetadata.area_num);
 
   const [loanType, setLoanType] = useState<LoanType>(safeMetadata.loan_type || '신용대출');
   const [interestRate, setInterestRate] = useState<number>(safeMetadata.interest_rate || 0);
@@ -244,6 +247,38 @@ const AssetForm: React.FC<Props> = ({ onSave, onClose, initialData }) => {
   const [isFetchingName, setIsFetchingName] = useState(false);
   const nameFetchedRef = useRef(false);
   const prevTickerRef = useRef(ticker);
+
+  const regionDropdown = useRegionDropdown();
+  const apartmentSearch = useApartmentSearch();
+  const apartmentSearchRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (category === AssetCategory.REAL_ESTATE) {
+      apartmentSearch.setRegionCd5(regionDropdown.regionCd5);
+    } else {
+      apartmentSearch.setRegionCd5(undefined);
+      apartmentSearch.clearResults();
+    }
+  }, [category, regionDropdown.regionCd5]);
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (
+        apartmentSearchRef.current &&
+        !apartmentSearchRef.current.contains(event.target as Node)
+      ) {
+        apartmentSearch.clearResults();
+      }
+    };
+
+    if (apartmentSearch.apartmentResults.length > 0) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [apartmentSearch.apartmentResults.length, apartmentSearch.clearResults]);
 
   // 티커가 변경되면 자동으로 이름 가져오기 (주식/퇴직연금만)
   useEffect(() => {
@@ -355,6 +390,9 @@ const AssetForm: React.FC<Props> = ({ onSave, onClose, initialData }) => {
     if (category === AssetCategory.REAL_ESTATE) {
       baseMetadata.address = address;
       baseMetadata.purchase_price = purchasePrice;
+      if (selectedAreaNum !== undefined) {
+        baseMetadata.area_num = selectedAreaNum;
+      }
     }
 
     if (category === AssetCategory.LOAN) {
@@ -553,14 +591,138 @@ const AssetForm: React.FC<Props> = ({ onSave, onClose, initialData }) => {
 
           {category === AssetCategory.REAL_ESTATE && (
             <>
-              <FormField label="주소" required>
-                <TextInput
-                  value={address}
-                  onChange={setAddress}
-                  placeholder="상세주소를 입력해주세요"
+              <div className={GRID_LAYOUT_CLASSES}>
+                <FormField
+                  label="시도"
                   required
-                />
-              </FormField>
+                  labelSuffix={
+                    regionDropdown.isLoadingSido && (
+                      <span className="ml-2 text-[10px] text-primary font-normal">조회 중...</span>
+                    )
+                  }
+                >
+                  <Select
+                    value={regionDropdown.selectedSido || ''}
+                    onValueChange={(value) => regionDropdown.setSelectedSido(value || undefined)}
+                    disabled={regionDropdown.isLoadingSido}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="시도를 선택하세요" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {regionDropdown.sidoList.map((sido) => (
+                        <SelectItem key={sido} value={sido}>
+                          {sido}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </FormField>
+
+                <FormField
+                  label="시군구"
+                  required
+                  labelSuffix={
+                    regionDropdown.isLoadingSigungu && (
+                      <span className="ml-2 text-[10px] text-primary font-normal">조회 중...</span>
+                    )
+                  }
+                >
+                  <Select
+                    value={regionDropdown.selectedSigungu || ''}
+                    onValueChange={(value) => regionDropdown.setSelectedSigungu(value || undefined)}
+                    disabled={!regionDropdown.selectedSido || regionDropdown.isLoadingSigungu}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder={regionDropdown.selectedSido ? '시군구를 선택하세요' : '시도를 먼저 선택하세요'} />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {regionDropdown.sigunguList.map((sigungu) => (
+                        <SelectItem key={sigungu} value={sigungu}>
+                          {sigungu}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </FormField>
+              </div>
+
+              {regionDropdown.selectedSido && regionDropdown.selectedSigungu && (
+                <div className="relative" ref={apartmentSearchRef}>
+                  <FormField
+                    label="아파트명 검색"
+                    labelSuffix={
+                      apartmentSearch.isLoading && (
+                        <span className="ml-2 text-[10px] text-primary font-normal">검색 중...</span>
+                      )
+                    }
+                  >
+                    <div className="relative">
+                      <TextInput
+                        value={apartmentSearch.apartmentName}
+                        onChange={apartmentSearch.setApartmentName}
+                        placeholder="아파트명을 입력하세요"
+                      />
+                      {apartmentSearch.apartmentResults.length > 0 && (
+                        <div className="absolute z-50 w-full mt-1 bg-popover border rounded-md shadow-lg max-h-60 overflow-y-auto">
+                          {apartmentSearch.apartmentResults.map((apt) => {
+                            const handleApartmentSelect = (e: React.MouseEvent<HTMLButtonElement>) => {
+                              e.preventDefault();
+                              const fullAddress = `${apt.locatadd_nm} ${apt.apt_name}`;
+                              setAddress(fullAddress);
+                              setName(apt.apt_name);
+                              apartmentSearch.setSelectedApartment(apt);
+                              apartmentSearch.setApartmentName('');
+                              setSelectedAreaNum(undefined);
+                            };
+
+                            return (
+                              <button
+                                key={`${apt.lawd_code}-${apt.apt_name}`}
+                                type="button"
+                                className="w-full text-left px-3 py-2 hover:bg-accent hover:text-accent-foreground text-sm border-b last:border-b-0"
+                                onMouseDown={handleApartmentSelect}
+                              >
+                                <div className="font-medium">{apt.apt_name}</div>
+                                <div className="text-xs text-muted-foreground">{apt.locatadd_nm}</div>
+                              </button>
+                            );
+                          })}
+                        </div>
+                      )}
+                    </div>
+                  </FormField>
+                </div>
+              )}
+
+              {apartmentSearch.selectedApartment && (
+                <FormField
+                  label="면적 타입"
+                  labelSuffix={
+                    apartmentSearch.isLoadingAreaTypes && (
+                      <span className="ml-2 text-[10px] text-primary font-normal">조회 중...</span>
+                    )
+                  }
+                >
+                  <Select
+                    value={selectedAreaNum?.toString() || ''}
+                    onValueChange={(value) => setSelectedAreaNum(value ? Number(value) : undefined)}
+                    disabled={apartmentSearch.isLoadingAreaTypes || apartmentSearch.areaTypes.length === 0}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder={apartmentSearch.isLoadingAreaTypes ? '면적 타입 조회 중...' : '면적 타입을 선택하세요'} />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {apartmentSearch.areaTypes.map((areaType) => (
+                        <SelectItem key={areaType.area_num} value={areaType.area_num.toString()}>
+                          {areaType.area_num}㎡
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </FormField>
+              )}
+
               <div className={GRID_LAYOUT_CLASSES}>
                 <FormField label="매입가" required>
                   <TextInput
