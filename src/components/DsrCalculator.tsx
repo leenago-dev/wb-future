@@ -37,7 +37,8 @@ const DsrCalculator: React.FC<Props> = ({ assets }) => {
   const calculateAnnualRepaymentForDsr = (asset: Asset) => {
     if (asset.category !== AssetCategory.LOAN || asset.metadata.is_dsr_excluded) return 0;
 
-    const principal = asset.amount;
+    // 대출 원금은 만원 단위로 저장되어 있으므로 원 단위로 변환
+    const principal = asset.amount * 10000;
     const annualRate = (asset.metadata.interest_rate || 0) / 100;
     const months = asset.metadata.loan_period || 12;
     const years = months / 12;

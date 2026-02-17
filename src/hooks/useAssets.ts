@@ -91,10 +91,16 @@ export function useAssets(selectedOwner: 'Total' | AssetOwner, currentView: View
     filteredAssets.forEach(asset => {
       const isLoan = asset.category === AssetCategory.LOAN;
       const isInvested = [AssetCategory.STOCK, AssetCategory.PENSION, AssetCategory.VIRTUAL_ASSET].includes(asset.category);
+      const isRealEstateOrLoan = asset.category === AssetCategory.REAL_ESTATE || asset.category === AssetCategory.LOAN;
 
       let currentVal = (isInvested)
         ? (asset.current_price || asset.metadata.avg_price || 0) * asset.amount
         : asset.amount;
+
+      // 부동산과 대출은 만원 단위로 저장되어 있으므로 원 단위로 변환
+      if (isRealEstateOrLoan) {
+        currentVal = currentVal * 10000;
+      }
 
       // USD 자산인 경우 환율 적용하여 KRW로 변환
       const isUsdAsset = asset.currency === 'USD' || asset.metadata.country === '미국';
@@ -115,7 +121,8 @@ export function useAssets(selectedOwner: 'Total' | AssetOwner, currentView: View
           totalPrincipal += principal;
           totalProfit += (currentVal - principal);
         } else if (asset.category === AssetCategory.REAL_ESTATE) {
-          const principal = asset.metadata.purchase_price || 0;
+          // 매입가도 만원 단위로 저장되어 있으므로 원 단위로 변환
+          const principal = (asset.metadata.purchase_price || 0) * 10000;
           totalPrincipal += principal;
           totalProfit += (currentVal - principal);
         }
@@ -161,10 +168,16 @@ export function useAssets(selectedOwner: 'Total' | AssetOwner, currentView: View
 
             const isLoan = asset.category === AssetCategory.LOAN;
             const isInvested = [AssetCategory.STOCK, AssetCategory.PENSION, AssetCategory.VIRTUAL_ASSET].includes(asset.category);
+            const isRealEstateOrLoan = asset.category === AssetCategory.REAL_ESTATE || asset.category === AssetCategory.LOAN;
 
             let currentVal = isInvested
               ? (asset.current_price || asset.metadata.avg_price || 0) * asset.amount * marketVariance
               : asset.amount;
+
+            // 부동산과 대출은 만원 단위로 저장되어 있으므로 원 단위로 변환
+            if (isRealEstateOrLoan) {
+              currentVal = currentVal * 10000;
+            }
 
             // USD 자산인 경우 환율 적용하여 KRW로 변환
             const isUsdAsset = asset.currency === 'USD' || asset.metadata.country === '미국';
@@ -185,7 +198,8 @@ export function useAssets(selectedOwner: 'Total' | AssetOwner, currentView: View
                 mPrincipal += principal;
                 mProfit += (currentVal - principal);
               } else if (asset.category === AssetCategory.REAL_ESTATE) {
-                const principal = asset.metadata.purchase_price || 0;
+                // 매입가도 만원 단위로 저장되어 있으므로 원 단위로 변환
+                const principal = (asset.metadata.purchase_price || 0) * 10000;
                 mPrincipal += principal;
                 mProfit += (currentVal - principal);
               }

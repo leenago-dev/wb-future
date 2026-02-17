@@ -49,6 +49,10 @@ const isInvestmentAsset = (category: AssetCategory): boolean => {
 
 const calculateAssetValue = (asset: Asset): number => {
   if (!isInvestmentAsset(asset.category)) {
+    // 부동산과 대출은 만원 단위로 저장되어 있으므로 원 단위로 변환
+    if (asset.category === AssetCategory.REAL_ESTATE || asset.category === AssetCategory.LOAN) {
+      return asset.amount * 10000;
+    }
     return asset.amount;
   }
 
@@ -74,7 +78,8 @@ const calculateMonthlyLoanPayment = (asset: Asset): number => {
     return 0;
   }
 
-  const principal = asset.amount;
+  // 대출 원금은 만원 단위로 저장되어 있으므로 원 단위로 변환
+  const principal = asset.amount * 10000;
   const annualRate = asset.metadata.interest_rate;
   const monthlyRate = annualRate / 12 / 100;
   const months = asset.metadata.loan_period ?? 12;
@@ -138,7 +143,7 @@ const CurrencyDisplay: React.FC<CurrencyDisplayProps> = ({
         {currency}
       </p>
       <p className={cn(
-        'text-xl font-bold leading-none text-slate-900'
+        'text-[18px] font-bold leading-none text-slate-900'
       )}>
         {displayValue}
       </p>
@@ -200,7 +205,7 @@ const InvestmentAssetInfo: React.FC<InvestmentAssetInfoProps> = ({
           <span className="w-px h-3 bg-slate-200"></span>
         </>
       )}
-      <span>{amount.toLocaleString()} Units</span>
+      <span>{amount.toLocaleString()}주</span>
       {avgPrice && (
         <>
           <span className="w-px h-3 bg-slate-200"></span>
@@ -503,40 +508,64 @@ const AssetItem: React.FC<AssetItemProps> = ({ asset, exchangeRate, onEdit, onDe
   const isUsd = isUsdAsset(asset);
 
   return (
-    <div className="p-5 hover:bg-muted/50 transition-all flex flex-col sm:flex-row sm:items-center justify-between group gap-4">
-      {/* 왼쪽: 자산 정보 */}
-      <div className="flex-1">
-        <div className="flex items-center gap-2 mb-1 flex-wrap">
-          <p className="font-black text-foreground">{asset.name}</p>
-          <AssetBadges asset={asset} isLoan={isLoan} dsrExcluded={dsrExcluded} />
+    <div className="bg-white rounded-3xl border border-slate-200 shadow-sm p-6 hover:shadow-md transition-all group">
+      <AssetHeader
+        category={asset.category}
+        owner={asset.owner as AssetOwner}
+        onEdit={() => onEdit(asset)}
+        onDelete={() => onDelete(asset.id)}
+      />
+
+      {/* Main Content */}
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 w-full">
+        {/* 왼쪽: 자산 정보 */}
+        <div className="flex-1">
+          <div className="flex flex-col gap-1.5">
+            <div className="flex items-center gap-2 flex-wrap">
+              <span className="text-2xl font-bold tracking-tight text-slate-900">{asset.name}</span>
+            </div>
+            <AssetDetails asset={asset} isLoan={isLoan} />
+          </div>
         </div>
-        <AssetDetails asset={asset} isLoan={isLoan} />
-      </div>
 
-      {/* 오른쪽: 금액 및 액션 */}
-      <div className="text-left sm:text-right flex flex-row sm:flex-col justify-between items-end sm:justify-center gap-2">
-        <div>
-          <AssetValueDisplay
-            value={value}
-            isUsd={isUsd}
-            exchangeRate={exchangeRate}
-            isLoan={isLoan}
-          />
-
-          {isLoan && (
-            <p className="text-xs font-black text-destructive/80 mt-1">
-              월 예상 납입: {formatCurrency(monthlyPayment)}
+        {/* 오른쪽: 금액 표시 */}
+        <div className="bg-slate-50 p-5 rounded-2xl border border-slate-100">
+          <div className="text-right">
+            <p className="text-[11px] font-medium font-bold text-slate-400 mb-1 tracking-wider uppercase">
+              {isUsd ? 'USD' : 'KRW'}
             </p>
-          )}
-
-          <ProfitDisplay asset={asset} profitRate={profitRate} exchangeRate={exchangeRate} />
+            <p className={cn(
+              'text-[18px] font-bold leading-none',
+              isLoan ? 'text-destructive' : 'text-slate-900'
+            )}>
+              {isUsd ? (
+                <>
+                  {formatCurrency(value, 'USD').replace('$', '$ ')}
+                </>
+              ) : (
+                formatCurrency(value, 'KRW').replace('₩', '₩ ')
+              )}
+            </p>
+            {isUsd && (
+              <p className="text-xs mt-2 font-medium text-slate-500">
+                {formatCurrency(value * exchangeRate, 'KRW').replace('₩', '₩ ')}
+              </p>
+            )}
+            {isLoan && (
+              <p className="text-xs font-bold text-destructive/80 mt-2">
+                월 납입: {formatCurrency(monthlyPayment, 'KRW')}
+              </p>
+            )}
+            {profitRate !== 0 && (
+              <p className={cn(
+                'text-xs mt-2 font-bold',
+                profitRate > 0 ? 'text-rose-500' : 'text-blue-500'
+              )}>
+                {profitRate > 0 ? '▲' : '▼'} {Math.abs(profitRate).toFixed(2)}%
+              </p>
+            )}
+          </div>
         </div>
-
-        <ActionButtons
-          onEdit={() => onEdit(asset)}
-          onDelete={() => onDelete(asset.id)}
-          variant="default"
-        />
       </div>
     </div>
   );
@@ -559,38 +588,22 @@ const CategoryCard: React.FC<CategoryCardProps> = ({
 }) => {
   const isInvestmentCategory = category === AssetCategory.STOCK || category === AssetCategory.PENSION;
 
-  if (isInvestmentCategory) {
-    return (
-      <div className="space-y-4">
-        {assets.map((asset) => (
-          <InvestmentAssetItem
-            key={asset.id}
-            asset={asset}
-            exchangeRate={exchangeRate}
-            onEdit={onEdit}
-            onDelete={onDelete}
-          />
-        ))}
-      </div>
-    );
-  }
-
+  // 모든 카테고리를 개별 카드 형태로 표시
   return (
-    <Card className="rounded-3xl overflow-hidden">
-      <CardHeader className="px-6 py-4 bg-muted/50 border-b">
-        <div className="flex justify-between items-center">
-          <CardTitle className="flex items-center gap-3">
-            <span className="text-xl">{CATEGORY_ICONS[category]}</span>
-            <span className="tracking-tight uppercase text-xs">{CATEGORY_LABELS[category]}</span>
-          </CardTitle>
-          <Badge variant="outline" className="text-[10px] uppercase">
-            {assets.length} items
-          </Badge>
-        </div>
-      </CardHeader>
-
-      <CardContent className="p-0 divide-y">
-        {assets.map((asset) => (
+    <div className="space-y-4">
+      {assets.map((asset) => {
+        if (isInvestmentCategory) {
+          return (
+            <InvestmentAssetItem
+              key={asset.id}
+              asset={asset}
+              exchangeRate={exchangeRate}
+              onEdit={onEdit}
+              onDelete={onDelete}
+            />
+          );
+        }
+        return (
           <AssetItem
             key={asset.id}
             asset={asset}
@@ -598,9 +611,9 @@ const CategoryCard: React.FC<CategoryCardProps> = ({
             onEdit={onEdit}
             onDelete={onDelete}
           />
-        ))}
-      </CardContent>
-    </Card>
+        );
+      })}
+    </div>
   );
 };
 

@@ -32,6 +32,12 @@ const Charts: React.FC<Props> = ({ assets, groupBy = 'category', exchangeRate = 
 
       return value;
     }
+
+    // 부동산과 대출은 만원 단위로 저장되어 있으므로 원 단위로 변환
+    if (asset.category === AssetCategory.REAL_ESTATE || asset.category === AssetCategory.LOAN) {
+      return asset.amount * 10000;
+    }
+
     return asset.amount;
   };
 
