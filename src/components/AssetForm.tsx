@@ -245,8 +245,10 @@ const AssetForm: React.FC<Props> = ({ onSave, onClose, initialData }) => {
   const [loanPeriod, setLoanPeriod] = useState<number>(safeMetadata.loan_period || 12);
   const [isDsrExcluded, setIsDsrExcluded] = useState<boolean>(safeMetadata.is_dsr_excluded || false);
   const [isFetchingName, setIsFetchingName] = useState(false);
+  const [isFetchingAvgPrice, setIsFetchingAvgPrice] = useState(false);
   const nameFetchedRef = useRef(false);
   const prevTickerRef = useRef(ticker);
+  const isInitialMountRef = useRef(true);
 
   const regionDropdown = useRegionDropdown();
   const apartmentSearch = useApartmentSearch();
@@ -261,24 +263,61 @@ const AssetForm: React.FC<Props> = ({ onSave, onClose, initialData }) => {
     }
   }, [category, regionDropdown.regionCd5]);
 
+  // 시도 또는 시군구가 변경되면 부동산 관련 모든 입력 초기화
   useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (
-        apartmentSearchRef.current &&
-        !apartmentSearchRef.current.contains(event.target as Node)
-      ) {
-        apartmentSearch.clearResults();
-      }
-    };
-
-    if (apartmentSearch.apartmentResults.length > 0) {
-      document.addEventListener('mousedown', handleClickOutside);
+    if (isInitialMountRef.current) {
+      isInitialMountRef.current = false;
+      return;
     }
 
-    return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
-    };
-  }, [apartmentSearch.apartmentResults.length, apartmentSearch.clearResults]);
+    if (category === AssetCategory.REAL_ESTATE) {
+      apartmentSearch.clearResults();
+      setName('');
+      setAddress('');
+      setSelectedAreaNum(undefined);
+      setPurchasePrice(0);
+      setAmount(0);
+    }
+  }, [regionDropdown.selectedSido, regionDropdown.selectedSigungu, category]);
+
+  // 아파트와 면적이 선택되면 평균 실거래가 자동 조회
+  useEffect(() => {
+    if (
+      category !== AssetCategory.REAL_ESTATE ||
+      !apartmentSearch.selectedApartment ||
+      selectedAreaNum === undefined
+    ) {
+      return;
+    }
+
+    const selectedApt = apartmentSearch.selectedApartment;
+    const selectedArea = selectedAreaNum;
+
+    const timeoutId = setTimeout(async () => {
+      if (!selectedApt) return;
+
+      setIsFetchingAvgPrice(true);
+      try {
+        const { data, error } = await supabase.rpc('get_apt_avg_price', {
+          p_lawd_code: selectedApt.lawd_code,
+          p_apt_name: selectedApt.apt_name,
+          p_area: selectedArea,
+          p_low_floor_max: 1
+        });
+
+        if (!error && data && data.length > 0 && data[0].avg_deal_amount) {
+          setAmount(data[0].avg_deal_amount);
+        }
+      } catch (error) {
+        // 에러는 조용히 무시
+      } finally {
+        setIsFetchingAvgPrice(false);
+      }
+    }, 800);
+
+    return () => clearTimeout(timeoutId);
+  }, [category, apartmentSearch.selectedApartment, selectedAreaNum]);
+
 
   // 티커가 변경되면 자동으로 이름 가져오기 (주식/퇴직연금만)
   useEffect(() => {
@@ -660,19 +699,25 @@ const AssetForm: React.FC<Props> = ({ onSave, onClose, initialData }) => {
                     <div className="relative">
                       <TextInput
                         value={apartmentSearch.apartmentName}
-                        onChange={apartmentSearch.setApartmentName}
+                        onChange={(value) => {
+                          apartmentSearch.setApartmentName(value);
+                          if (apartmentSearch.selectedApartment) {
+                            apartmentSearch.setSelectedApartment(undefined);
+                          }
+                        }}
                         placeholder="아파트명을 입력하세요"
                       />
-                      {apartmentSearch.apartmentResults.length > 0 && (
-                        <div className="absolute z-50 w-full mt-1 bg-popover border rounded-md shadow-lg max-h-60 overflow-y-auto">
+                      {apartmentSearch.apartmentResults.length > 0 && !apartmentSearch.selectedApartment && (
+                        <div className="absolute z-50 w-full top-full mt-1 bg-popover border rounded-md shadow-lg max-h-60 overflow-y-auto pointer-events-auto">
                           {apartmentSearch.apartmentResults.map((apt) => {
                             const handleApartmentSelect = (e: React.MouseEvent<HTMLButtonElement>) => {
                               e.preventDefault();
+                              e.stopPropagation();
                               const fullAddress = `${apt.locatadd_nm} ${apt.apt_name}`;
                               setAddress(fullAddress);
                               setName(apt.apt_name);
                               apartmentSearch.setSelectedApartment(apt);
-                              apartmentSearch.setApartmentName('');
+                              apartmentSearch.setApartmentName(apt.apt_name);
                               setSelectedAreaNum(undefined);
                             };
 
@@ -681,7 +726,7 @@ const AssetForm: React.FC<Props> = ({ onSave, onClose, initialData }) => {
                                 key={`${apt.lawd_code}-${apt.apt_name}`}
                                 type="button"
                                 className="w-full text-left px-3 py-2 hover:bg-accent hover:text-accent-foreground text-sm border-b last:border-b-0"
-                                onMouseDown={handleApartmentSelect}
+                                onClick={handleApartmentSelect}
                               >
                                 <div className="font-medium">{apt.apt_name}</div>
                                 <div className="text-xs text-muted-foreground">{apt.locatadd_nm}</div>
@@ -724,7 +769,13 @@ const AssetForm: React.FC<Props> = ({ onSave, onClose, initialData }) => {
               )}
 
               <div className={GRID_LAYOUT_CLASSES}>
-                <FormField label="매입가" required>
+                <FormField
+                  label="매입가"
+                  required
+                  labelSuffix={
+                    <span className="ml-1 text-[10px] text-muted-foreground font-normal">(만원)</span>
+                  }
+                >
                   <TextInput
                     type="number"
                     value={purchasePrice}
@@ -732,7 +783,17 @@ const AssetForm: React.FC<Props> = ({ onSave, onClose, initialData }) => {
                     required
                   />
                 </FormField>
-                <FormField label="평가액" required>
+                <FormField
+                  label="평가액"
+                  required
+                  labelSuffix={
+                    isFetchingAvgPrice ? (
+                      <span className="ml-2 text-[10px] text-primary font-normal">조회 중...</span>
+                    ) : (
+                      <span className="ml-1 text-[12px] text-muted-foreground font-normal">(단위: 만원)</span>
+                    )
+                  }
+                >
                   <TextInput
                     type="number"
                     value={amount}
